@@ -1,0 +1,12 @@
+.idea/*
+*/__pycache__/*
+*/gurobi.log
+gurobi.log
+*.pyc
+*/*.pyc
+tests/test_results/*
+*/*.png
+PWA_Control
+*.png
+*.npy
+*.p
