@@ -24,7 +24,8 @@ class AH_polytope():
         T: R^(n*q) matrix: linear transformation
         t: R^{n*1) vector: translation
     """
-    def __init__(self,T,t,P):
+    # THIS USED
+    def __init__(self,T,t,P,color='r'):
         """
         Initilization: T,t,P. X=TP+t
         """

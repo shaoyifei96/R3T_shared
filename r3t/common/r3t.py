@@ -351,7 +351,7 @@ class R3T:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
             if sample_count>100:
-                print('Warning: sample count %d' %sample_count)
+                print('Warning: sample count %d' %sample_count)  # just warning that cannot get to a new sample even after so long
             if not explore_deterministic_next_state:
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
                 self.state_tree.insert(new_state_id, new_node.state)

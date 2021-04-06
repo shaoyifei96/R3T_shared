@@ -86,7 +86,7 @@ def test_pendulum_planning():
 
     duration = 0
     os.makedirs('R3T_Pendulum_'+experiment_name)
-    allocated_time = 0.1
+    allocated_time = 2.0# 0.1
     while(1):
         start_time = time.time()
         if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:

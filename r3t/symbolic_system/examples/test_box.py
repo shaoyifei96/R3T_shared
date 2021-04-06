@@ -71,7 +71,7 @@ def contains_goal_function(reachable_set, goal_state):
     return False, None
 
 def compute_reachable_set(state):
-    print state
+    print (state)
     list_of_reachable_sets = oracle(state) #TODO
 
     return PolytopeReachableSet(state,list_of_reachable_sets, contains_goal_function=contains_goal_function, \
@@ -103,16 +103,16 @@ while rrt.node_tally<=200 or number_of_failures<=500:
                 reachable_polytopes.extend(prs.polytope_list)
                 explored_states.append(prs.parent_state)
 #                print "the size of explored states",len(explored_states)
-            print "THE size of explored states",len(explored_states)
+            print ("THE size of explored states",len(explored_states))
             # print(explored_states)
             # print(len(explored_states))
             # print('number of nodes',rrt.node_tally)
         #        print("Best distance %f" %best_distance)
-            print "The number of nodes",rrt.node_tally
+            print ("The number of nodes",rrt.node_tally)
             if rrt.node_tally>=600:
                 break
     except:
-        print "Failure, ",number_of_failures
+        print ("Failure, ",number_of_failures)
         number_of_failures+=1
     if found_goal:
         break
@@ -189,7 +189,7 @@ raise 1
 largest_theta=0
 for state in all_states:
     if state[2]>largest_theta:
-        print "found a state"
+        print ("found a state")
         largest_theta=state[2]
         mystate=state
         

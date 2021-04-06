@@ -65,7 +65,7 @@ class zonotope():
         self.color=color
         self.hash_value = None
         self.distance_program=None
-        self.__name__ = "zonotope"
+        self.__name__ = self.name
 #        self.color="red"
 
     def __repr__(self):

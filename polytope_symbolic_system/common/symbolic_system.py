@@ -1,6 +1,7 @@
 import pydrake.symbolic as sym
 import numpy as np
 from pypolycontain.lib.zonotope import *
+# from pypolycontain.lib.zonotope import *
 from pypolycontain.lib.operations import convex_hull_of_point_and_polytope
 
 def extract_variable_value_from_env(symbolic_var, env):
@@ -119,7 +120,7 @@ class DTContinuousSystem:
         '''
         self.dynamics = ContinuousDynamics(f,x,u)
         if input_limits is None:
-            self.input_limits = np.vstack([np.full(u.shape[0], -1e9),np.full(u.shape[0], 1e9)])
+            self.input_limits = np.vstack([np.full(u.shape[0], -1e9),np.full(u.shape[0], 1e9)]) #stack add rows
         else:
             self.input_limits = input_limits
         self.u_bar = np.average(self.input_limits, axis=0)
@@ -135,14 +136,16 @@ class DTContinuousSystem:
 
 
     def forward_step(self, u=None, linearlize=False, modify_system=True, step_size = 1e-3, return_as_env = False, starting_state=None):
+        #propagate state by one time step
         if starting_state is not None:
-            new_env = self._state_to_env(starting_state, u)  #just fill in the particular state and control input
+            new_env = self._state_to_env(starting_state, u)  #just fill in the particular state and control input in discretized system
         elif not modify_system:
             new_env = self.env.copy()
         else:
             new_env = self.env
         if u is not None:
             for i in range(u.shape[0]):
+                #bound the control input and add to the system environment info
                 new_env[self.dynamics.u[i]] = min(max(u[i],self.input_limits[0,i]),self.input_limits[1,i])
         else:
             for i in range(self.dynamics.u.shape[0]):
@@ -158,14 +161,24 @@ class DTContinuousSystem:
 
     def get_reachable_polytopes(self, state, step_size = 1e-2, use_convex_hull=False):
         current_linsys = self.get_linearization(state, self.u_bar)
+        #x_{k+1} = (A \Delta t+ I)x_k + B\Delta t u_bar + c \Delta
         x = np.ndarray.flatten(np.dot(current_linsys.A*step_size+np.eye(current_linsys.A.shape[0]),state))+\
             np.dot(current_linsys.B*step_size, self.u_bar)+np.ndarray.flatten(current_linsys.c*step_size)
-        x = np.atleast_2d(x).reshape(-1,1)
+        # print(f"symbolic system: x before :{x}, x shape: {x.shape}")
+        x = np.atleast_2d(x).reshape(-1,1) #convert to column vector if a row vector
+        # x = np.atleast_2d(x)
+        # print(f"symbolic system: x after:{x}, state:{state} ")
         assert(len(x)==len(state))
-        G = np.atleast_2d(np.dot(current_linsys.B*step_size, np.diag(self.u_diff)))
+        G_before = np.dot(current_linsys.B*step_size, np.diag(self.u_diff))
+        # print(f"G before:{G_before}")
+        # G = np.atleast_2d(np.dot(current_linsys.B*step_size, np.diag(self.u_diff)))
+        G = np.atleast_2d(np.dot(current_linsys.B*step_size, np.diag(self.u_diff))).reshape(-1,1)
         if use_convex_hull:
+            # print("in convex hull")
+            # print(f"x:{x}")
+            # print(f"G:{G}")
             return convex_hull_of_point_and_polytope(state.reshape(x.shape),zonotope(x,G))
-        return to_AH_polytope(zonotope(x,G))
+        return to_AH_polytope(zonotope(x,G)) #this is a bad approximation
 
 
     def get_linearization(self, state=None, u_bar = None, mode=None):

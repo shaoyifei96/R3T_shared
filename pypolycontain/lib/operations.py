@@ -32,13 +32,15 @@ def to_AH_polytope(P):
     """
     Converts the polytopic object P into an AH-polytope
     """
+    #This file is used
+    # print(f"P name:{P.__name__}")
     if P.__name__=="AH_polytope":#P.__name__=="AH_polytope":
         return P
     elif P.__name__=="H_polytope":
         n=P.H.shape[1]
         return AH_polytope(np.eye(n),np.zeros((n,1)),P)
     elif P.__name__=="zonotope":
-        q=P.G.shape[1]
+        q=P.G.shape[1]  #shape 0??
         return AH_polytope(P.G,P.x,Box(N=q),color=P.color)
     else:
         raise ValueError("P type not understood:",P.type)
@@ -422,8 +424,10 @@ def convex_hull_of_point_and_polytope(x, Q):
     .. math::
         \text{conv}(x,Q):=\{y | y= \lambda q + (1-\lambda) x, q \in Q\}.
     """
+    # print(f"Q:{Q}, Q.G:{Q.G}, Q.x:{Q.x}")
     Q=to_AH_polytope(Q)
     q=Q.P.H.shape[1]
+    # print(f"convex hull: Q.T:{Q.T}, Q.t:{Q.t}, x:{x}, Q.t-x:{Q.t-x}")
     new_T=np.hstack((Q.T,Q.t-x))
     new_t=x
     new_H_1=np.hstack((Q.P.H,-Q.P.h))

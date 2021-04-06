@@ -31,6 +31,7 @@ class zonotope():
             self.color=(np.random.random(),np.random.random(),np.random.random())
         self.type="zonotope"
         self.hash_value=None
+        self.__name__ = "zonotope"
 
     def __repr__(self):
         return self.name

@@ -76,6 +76,7 @@ class PolytopeReachableSet(ReachableSet):
         :param query_point:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
+        ## Upper Bound method
         distance = np.inf
         closest_point = None
         p_used = None
