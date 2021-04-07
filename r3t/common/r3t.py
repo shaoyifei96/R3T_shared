@@ -303,6 +303,7 @@ class R3T:
             self.goal_node=goal_node
 
         while True:
+            # print("running search")
             if stop_on_first_reach:
                 if self.goal_node is not None:
                     print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
@@ -316,7 +317,7 @@ class R3T:
                     print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
                     default_timer() - start, self.node_tally))
                     return self.goal_node
-
+            # print("running search 1")
             #sample the state space
             sample_is_valid = False
             sample_count = 0
@@ -325,34 +326,47 @@ class R3T:
                 sample_count+=1
                 # map the states to nodes
                 try:
+                    # print("running sampler 1")
                     nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
                     discard = True
+                    # print("running sampler 1_1")
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
+                    # print("running sampler 1_2")
                     # find the closest state in the reachable set and use it to extend the tree
                     new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
+                    # print("running sampler 1_3")
                     new_state_id = hash(str(new_state))
+                    # print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree
+                    # if new_state_id in self.state_to_node_map or discard:
                     if new_state_id in self.state_to_node_map or discard:
                         # FIXME: how to prevent repeated state exploration?
                         # print('Warning: state already explored')
+                        # print("running sampler 3")
                         continue  # #sanity check to prevent numerical errors
 
                     if not explore_deterministic_next_state:
+                        # print("running sampler 4")
                         is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
                     else:
+                        # print("running sampler 5")
                         is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
                 except Exception as e:
                     # print('Caught %s' % e)
+                    # print("running sampler 6")
                     is_extended = False
                 if not is_extended:
                     # print('Extension failed')
+                    # print("running sampler 7")
                     continue
                 else:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
+            # print("running search 2")
             if sample_count>100:
                 print('Warning: sample count %d' %sample_count)  # just warning that cannot get to a new sample even after so long
             if not explore_deterministic_next_state:
+                # print("running search 3")
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
                 self.state_tree.insert(new_state_id, new_node.state)
                 try:
@@ -377,12 +391,15 @@ class R3T:
                     # if cost_to_go == np.inf:
                     #     continue
                     goal_node = self.create_child_node(new_node, self.goal_state, true_dynamics_path)
-                    diff = np.subtract(self.goal_state, true_dynamics_path)
-                    diff_norm = np.linalg.norm(diff, axis=1)
+
+                    #Hardik: commented two lines below
+                    # diff = np.subtract(self.goal_state, true_dynamics_path)
+                    # diff_norm = np.linalg.norm(diff, axis=1)
                     if rewire:
                         self.rewire(goal_node)
                     self.goal_node=goal_node
             else:
+                # print("running search 4")
                 nodes_to_add = [new_node]
                 for iteration_count in range(int(max_nodes_to_add)):
                     # No longer deterministic
@@ -406,6 +423,7 @@ class R3T:
                     if not is_extended:  # extension failed
                         break
                     nodes_to_add.append(new_node)
+                # print("running search 5")
                 if iteration_count == max_nodes_to_add-1:
                     print('Warning: hit max_nodes_to_add')
                 for new_node in nodes_to_add:
@@ -437,6 +455,7 @@ class R3T:
                         if rewire:
                             self.rewire(goal_node)
                         self.goal_node=goal_node
+        print("finished search")
 
     def rewire(self, new_node):
         # rewire_parent_candidate_states = list(self.reachable_set_tree.d_neighbor_ids(new_node.state))

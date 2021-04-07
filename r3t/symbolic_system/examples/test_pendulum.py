@@ -24,7 +24,7 @@ def test_pendulum_planning():
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.1 # 0.075
+    step_size = 0.3#0.1 # 0.075
     nonlinear_dynamic_step_size=1e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
@@ -157,6 +157,7 @@ def test_pendulum_planning():
         plt.tight_layout()
         plt.title('$|u| \leq %.2f$ Reachable Set after %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
         plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+        plt.pause(0.02)
         # plt.show()
         plt.clf()
         plt.close()

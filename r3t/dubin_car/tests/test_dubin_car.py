@@ -34,6 +34,7 @@ def test_fixed_small_boxy_world():
     for obs in obstacles:
         world.add_obstacle(obs)
     rrt = DC_R3T(root, world.point_collides_with_obstacle, world.random_sampler, rewire_radius=4)
+
     goal_node = rrt.build_tree_to_goal_state(goal,stop_on_first_reach=True, allocated_time=np.inf, explore_deterministic_next_state = False)
     if goal_node is None:
         print('No path found!')
@@ -73,6 +74,7 @@ def test_fixed_medium_boxy_world_optimality(try_duration,tries = 5, plot_routes 
     for obs in obstacles:
         world.add_obstacle(obs)
     rrt = DC_R3T(root, world.point_collides_with_obstacle, world.random_sampler, rewire_radius=5)
+    # rrt = SymbolicSystem_R3T(  )
 
     costs = np.zeros(tries)
     nodes_explored = np.zeros(tries)

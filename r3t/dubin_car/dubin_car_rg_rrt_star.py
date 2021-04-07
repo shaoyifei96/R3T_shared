@@ -15,6 +15,9 @@ from time import time
 from closest_polytope_algorithms.bounding_box.box import AABB, point_in_box
 from closest_polytope_algorithms.visualization.visualize import visualize_boxes
 
+#Hardik:added 
+from closest_polytope_algorithms.visualization.visualize import visualize_box_nodes
+
 def wrap_angle(theta):
     theta %= 2*np.pi
     if theta>=np.pi:
@@ -204,6 +207,15 @@ class DC_ReachableSet(ReachableSet):
         '''
         return self.BASE_REACHABLE_SET.contains(self.transform_to_car_frame(goal_state))
 
+    def contains_goal(self, goal_state):
+        '''
+        Check if the state given is in this set
+        :param state: query state
+        :return: Boolean of whether the state is reachable
+        '''
+        print(f"here yes")
+        return self.BASE_REACHABLE_SET.contains(self.transform_to_car_frame(goal_state)), self.BASE_REACHABLE_SET.plan_collision_free_path_in_set(self.transform_to_car_frame(goal_state))
+
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state=False):
         '''
         Plans a path between self.state and goal_state. Goals state must be in this reachable set
@@ -235,7 +247,18 @@ class DC_ReachableSet(ReachableSet):
         closest_state, is_self_state =  self.BASE_REACHABLE_SET.find_closest_state(car_frame_query_point)
         return self.transform_from_car_frame(closest_state), is_self_state
 
-class DC_Map:
+    def find_closest_state(self, query_point, save_true_dynamics_path):
+        '''
+        Finds the closest point in the reachable set to the query point
+        :param query_point:
+        :return: Tuple (closest_point, closest_point_is_self.state)
+        '''
+        car_frame_query_point = self.transform_to_car_frame(query_point)
+        closest_state, is_self_state =  self.BASE_REACHABLE_SET.find_closest_state(car_frame_query_point)
+        #discard if self_state
+        return self.transform_from_car_frame(closest_state), is_self_state, self.BASE_REACHABLE_SET.plan_collision_free_path_in_set(car_frame_query_point)
+
+class DC_Map: #to define the world
     '''
     Obstacles do not have a theta
     theta is represented from -np.pi to np.pi

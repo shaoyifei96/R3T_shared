@@ -23,7 +23,8 @@ def visualize_tree(dc_rrt, world_map, visualize_all_nodes=True, visualize_all_pa
     node_queue.append(dc_rrt.root_node)
     # print('root', len(dc_rrt.root_node.children))
     if visualize_obstacles:
-        visualize_boxes(world_map.obstacles, ax=ax, fig=fig, fill=True, alpha = 0.3)
+        # visualize_boxes(world_map.obstacles, ax=ax, fig=fig, fill=True, alpha = 0.3)
+        visualize_box_nodes(world_map.obstacles, ax=ax, fig=fig, fill=True, alpha = 0.3)
 
     if visualize_all_nodes or visualize_all_paths:
         tree_path_segments = []
@@ -51,6 +52,7 @@ def visualize_tree(dc_rrt, world_map, visualize_all_nodes=True, visualize_all_pa
         node = dc_rrt.goal_node
         goal_path_segments = []
         #Green goal node
+        print(f"visualize path node:{node}, node_path:{node.path_from_parent}")
         segs = node.path_from_parent.get_dubins_interpolated_path()
         for i in range(segs.shape[0] - 1):
             goal_path_segments.append([segs[i, 0:2], segs[i + 1, 0:2]])

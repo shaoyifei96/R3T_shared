@@ -40,6 +40,7 @@ def visualize_boxes(box_list, dim_x = 0, dim_y = 1, xlim=None, ylim=None, ax = N
 def visualize_box_nodes(box_nodes_list, dim_x = 0, dim_y = 1, xlim=None, ylim=None, ax = None, fig = None,alpha=None,fill=False,linewidth=3):
     box_list = []
     for box_node in box_nodes_list:
-        box_list.append(box_node.box)
-    return visualize_boxes(box_list,dim_x = dim_x, dim_y = dim_y,linewidth=linewidth, xlim=xlim, ylim=ylim, ax = ax, fig = fig,alpha=alpha, fill=fill)
+        # box_list.append(box_node.box)  #original
+        box_list.append(box_node)  #hardik:mod
+    return visualize_boxes(box_list,dim_x = dim_x, dim_y = dim_y,linewidth=linewidth, xlim=xlim, ylim=ylim, ax = ax, fig = fig,alpha=alpha)#, fill=fill) #hardik:mod
 
