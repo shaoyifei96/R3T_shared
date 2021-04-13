@@ -1,5 +1,5 @@
 import pydrake
-from r3t.common.r3t import *
+from r3t.common.r3t_overapprox import *
 from polytope_symbolic_system.common.symbolic_system import *
 from pypolycontain.lib.operations import distance_point_polytope
 from collections import deque
@@ -279,7 +279,7 @@ class SymbolicSystem_StateTree(StateTree):
             scaled_lu = np.multiply(self.repeated_distance_scaling_array, lu)
             return list(self.state_idx.intersection(scaled_lu))
 
-class SymbolicSystem_R3T(R3T):
+class SymbolicSystem_OverR3T(OverR3T):
     def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
                  nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
         self.sys = sys
@@ -289,7 +289,7 @@ class SymbolicSystem_R3T(R3T):
         if compute_reachable_set is None:
             def compute_reachable_set(state):
                 '''
-                Compute polytopic reachable set using the system
+                Compute polytopic reachable set using the system - for last time index
                 :param h:
                 :return:
                 '''
@@ -306,4 +306,4 @@ class SymbolicSystem_R3T(R3T):
                 return PolytopeReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
-        R3T.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
+        OverR3T.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
