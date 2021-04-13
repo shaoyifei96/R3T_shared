@@ -37,14 +37,6 @@ def check_collision(parent_node, goal_state, obstacles):
 
 
 
-
-def initialize_reachable_set_tree_for_node(parent_node):
-
-	last_time_zonotope = parent_node.reachable_set[-1]
-	return last_time_zonotope
-
-
-
 def generate_keypoints_for_zonotope(Z, k0=[0], kf=[1], N=5):
     ''' slice it for a particular parametere value and then find end point of zonotope.
     keypoints are center of the zonotopes.

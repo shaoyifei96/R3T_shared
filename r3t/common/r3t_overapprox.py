@@ -77,9 +77,11 @@ class ReachableSet:
         :return: Tuple (closest_point, closest_point_is_self.state)
         '''
         raise('NotImplementedError')
+        
 
-class Node:
-    def __init__(self, state, reachable_set, true_dynamics_path, parent = None, path_from_parent = None,
+class OverR3TNode():
+
+    def __init__(self, state, compute_last_reachable_set, complete_reachable_set, generator_list, true_dynamics_path, parent = None, path_from_parent = None,
                  children = None, cost_from_parent = np.inf):
         '''
         A node in the RRT tree
@@ -91,7 +93,6 @@ class Node:
         :param cost_from_parent: cost to go from the parent to the node
         '''
         self.state = state
-        self.reachable_set = reachable_set
         self.parent = parent
         self.path_from_parent = path_from_parent
         self.cost_from_parent = cost_from_parent
@@ -105,100 +106,14 @@ class Node:
         else:
             self.cost_from_root = cost_from_parent
 
-    def __repr__(self):
-        if self.parent:
-            return '\nRG-RRT* Node: '+'\n'+ \
-                    '   state: ' + str(self.state) +'\n'+\
-                    '   parent state: ' + str(self.parent.state) +'\n'+ \
-                    '   path from parent: ' + self.path_from_parent.__repr__()+'\n'+ \
-                    '   cost from parent: ' + str(self.cost_from_parent) + '\n' + \
-                    '   cost from root: ' + str(self.cost_from_root) + '\n' #+ \
-                    # '   children: ' + self.children.__repr__() +'\n'
-        else:
-            return '\nRG-RRT* Node: '+'\n'+ \
-                    '   state: ' + str(self.state) +'\n'+\
-                    '   parent state: ' + str(None) +'\n'+ \
-                    '   cost from parent: ' + str(self.cost_from_parent) + '\n' + \
-                    '   cost from root: ' + str(self.cost_from_root) + '\n' #+ \
-                    # '   children: ' + self.children.__repr__() +'\n'
-
-    def __hash__(self):
-        return hash(str(self.state))
-
-    def __eq__(self, other):
-        return self.__hash__()==other.__hash__()
-
-    def add_children(self, new_children_and_paths):
-        #TODO: deprecated this function
-        '''
-        adds new children, represented as a set, to the node
-        :param new_children:
-        :return:
-        '''
-        self.children.update(new_children_and_paths)
-
-    # def update_parent(self, new_parent=None, cost_self_from_parent=None, path_self_from_parent=None):
-    #     '''
-    #     updates the parent of the node
-    #     :param new_parent:
-    #     :return:
-    #     '''
-    #     if self.parent is not None and new_parent is not None:  #assigned a new parent
-    #         self.parent.children.remove(self)
-    #         self.parent = new_parent
-    #         self.parent.children.add(self)
-    #     #calculate new cost from root #FIXME: redundancy
-    #     assert(self.parent.reachable_set.contains(self.state))
-    #     cost_self_from_parent, path_self_from_parent = self.parent.reachable_set.plan_collision_free_path_in_set(self.state)
-    #     cost_root_to_parent = self.parent.cost_from_root
-    #     self.cost_from_parent = cost_self_from_parent
-    #     self.cost_from_root = cost_root_to_parent+self.cost_from_parent
-    #     self.path_from_parent = path_self_from_parent
-    #     #calculate new cost for children
-    #     for child in self.children:
-    #         child.update_parent()
-    #     # print(self.parent.state, 'path', self.path_from_parent)
-    #     # assert(np.all(self.parent.state==self.path_from_parent[0]))
-    #     # assert(np.all(self.state==self.path_from_parent[1]))
-
-
-
-class OverR3TNode(Node):
-
-    def __init__(self, state, reachable_set, true_dynamics_path, parent = None, path_from_parent = None,
-                 children = None, cost_from_parent = np.inf):
-        '''
-        A node in the RRT tree
-        :param state: the state associated with the node
-        :param reachable_set: the reachable points from this node
-        :param parent: the parent of the node
-        :param path_from_parent: the path connecting the parent to state
-        :param children: the children of the node
-        :param cost_from_parent: cost to go from the parent to the node
-        '''
-        self.state = state
-        self.reachable_set = reachable_set 
-        self.parent = parent
-        self.path_from_parent = path_from_parent
-        self.cost_from_parent = cost_from_parent
-        self.true_dynamics_path = true_dynamics_path
-        if children is not None:
-            self.children = children
-        else:
-            self.children = set()
-        if self.parent:
-            self.cost_from_root = self.parent.cost_from_root + self.cost_from_parent
-        else:
-            self.cost_from_root = cost_from_parent
-
-        complete_reachable_set, generator_list = self.initialize_reachable_set_node(self.state)
         self.complete_reachable_set = complete_reachable_set
         self.generator_list = generator_list
+        self.reachable_set = compute_last_reachable_set(self.state, self.get_last_reachable_set())
 
 
     def __repr__(self):
         if self.parent:
-            return '\nRG-RRT* Node: '+'\n'+ \
+            return '\nRG-RRT* OverR3TNode: '+'\n'+ \
                     '   state: ' + str(self.state) +'\n'+\
                     '   parent state: ' + str(self.parent.state) +'\n'+ \
                     '   path from parent: ' + self.path_from_parent.__repr__()+'\n'+ \
@@ -206,7 +121,7 @@ class OverR3TNode(Node):
                     '   cost from root: ' + str(self.cost_from_root) + '\n' #+ \
                     # '   children: ' + self.children.__repr__() +'\n'
         else:
-            return '\nRG-RRT* Node: '+'\n'+ \
+            return '\nRG-RRT* OverR3TNode: '+'\n'+ \
                     '   state: ' + str(self.state) +'\n'+\
                     '   parent state: ' + str(None) +'\n'+ \
                     '   cost from parent: ' + str(self.cost_from_parent) + '\n' + \
@@ -229,29 +144,10 @@ class OverR3TNode(Node):
         self.children.update(new_children_and_paths)
 
 
-    def initialize_reachable_set_node(node):
-        '''returns the overapproximated rechable set for initial condition = given node state
+    def get_last_reachable_set(self):
+        ''' (New Function)
         '''
-        reachable_set = []
-        generator_list = []
-
-        for t in range(0,T):
-
-            global mat
-
-            generator_list.append(mat['info_FRS'][0][t])
-
-            x = mat['save_FRS'][0][t][:,0] #center
-            G = mat['save_FRS'][0][t][:,1:]
-            Z = zonotope(x,G,color='green')
-
-            # slice it for initial state
-            slice_value = np.array(node.state) # 2x1 vector: theta0, theta_dot0
-            Z_slice = zonotope_slice(Z, generator_idx=mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
-
-            reachable_set.append(Z_slice)
-
-        return reachable_set, generator_list
+        return self.complete_reachable_set[-1]
 
 
 class ReachableSetTree:
@@ -295,19 +191,21 @@ class StateTree:
         raise('NotImplementedError')
 
 class OverR3T:
-    def __init__(self, root_state, compute_reachable_set, sampler, reachable_set_tree, state_tree, path_class, rewire_radius = None):
+    def __init__(self, root_state, compute_last_reachable_set, sampler, reachable_set_tree, state_tree, path_class, rewire_radius = None):
         '''
         Base RG-RRT*
         :param root_state: The root state
-        :param compute_reachable_set: A function that, given a state, returns its reachable set
+        :param compute_last_reachable_set: A function that, given a state, returns its reachable set
         :param sampler: A function that randomly samples the state space
         :param reachable_set_tree: A StateTree object for fast querying
         :param path_class: A class handel that is used to represent path
         '''
-        self.root_node = Node(root_state, compute_reachable_set(root_state), np.asarray([root_state,root_state]),cost_from_parent=0)
+        self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat")
+        complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
+        self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
         self.state_dim = root_state[0]
-        self.compute_reachable_set = compute_reachable_set
+        self.compute_last_reachable_set = compute_last_reachable_set
         self.sampler = sampler
         self.goal_state = None
         self.goal_node = None
@@ -315,11 +213,42 @@ class OverR3T:
         self.state_tree = state_tree()
         self.state_tree.insert(self.root_id,self.root_node.state)
         self.reachable_set_tree = reachable_set_tree() #tree for fast node querying
+
+        # print()
+
+
         self.reachable_set_tree.insert(self.root_id, self.root_node.reachable_set)
         self.state_to_node_map = dict()
         self.state_to_node_map[self.root_id] = self.root_node
         self.node_tally = 0
         self.rewire_radius=rewire_radius
+
+
+    def compuate_reachable_set_and_generator(self, child_state):
+        ''' (New Function)
+        returns the overapproximated rechable set for initial condition = given node state
+        '''
+
+        complete_reachable_set = []
+        generator_list = []
+
+        for t in range(len(self.mat['info_FRS'][0])): 
+
+            generator_list.append(self.mat['info_FRS'][0][t])
+
+            x = self.mat['save_FRS'][0][t][:,0] #center
+            G = self.mat['save_FRS'][0][t][:,1:]
+            Z = zonotope(x,G,color='green')
+
+            # slice it for initial state
+            slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
+            Z_slice = zonotope_slice(Z, generator_idx=self.mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
+
+            complete_reachable_set.append(Z_slice)
+
+        return complete_reachable_set, generator_list
+
+
 
     def create_child_node(self, parent_node, child_state, true_dynamics_path, cost_from_parent = None, path_from_parent = None):
         '''
@@ -336,7 +265,10 @@ class OverR3T:
         # assert (parent_node.reachable_set.contains(child_state))
         cost_from_parent, path_from_parent = parent_node.reachable_set.plan_collision_free_path_in_set(child_state)
         # construct a new node
-        new_node = Node(child_state, self.compute_reachable_set(child_state), true_dynamics_path,
+
+        complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(child_state)
+
+        new_node = OverR3TNode(child_state, self.compute_last_reachable_set, complete_reachable_set, generator_list, true_dynamics_path,
                         parent=parent_node, path_from_parent=path_from_parent, cost_from_parent=cost_from_parent)
         parent_node.children.add(new_node)
         return new_node
@@ -377,7 +309,7 @@ class OverR3T:
         :param stop_on_first_reach: Whether the planner should continue improving on the solution if it finds a path to goal before time runs out.
         :param rewire: Whether to do RRT*
         :param explore_deterministic_next_state: perform depth-first exploration (no sampling, just build node tree) when the reachable set is a point
-        :return: The goal node as a Node object. If no path is found, None is returned. self.goal_node is set to the return value after running.
+        :return: The goal node as a OverR3TNode object. If no path is found, None is returned. self.goal_node is set to the return value after running.
         '''
         #TODO: Timeout and other termination functionalities
         start = default_timer()
@@ -398,7 +330,9 @@ class OverR3T:
             self.goal_node=goal_node
 
         while True:
-            # print("running search")
+
+            print("running search")
+
             if stop_on_first_reach:
                 if self.goal_node is not None:
                     print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,

@@ -37,7 +37,6 @@ class PolytopeReachableSet(ReachableSet):
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
         try:
-            print("NONONONONONONONO\n")
             #multimodal
             distance = np.inf
             closest_state = None
@@ -56,8 +55,6 @@ class PolytopeReachableSet(ReachableSet):
                         closest_state = current_closest_state
             return False, closest_state
         except TypeError:
-
-            print("HAHAHAHAHHAHAHAHA\n")
 
             distance, closest_state = distance_point_polytope(self.polytope_list, goal_state, ball='l2')
             if distance < self.epsilon:
@@ -197,6 +194,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
                 self.polytope_to_id[p] = state_id
 
         except TypeError:
+            # It should go here because we have a zonotope
             # print("Convex hull, reachable_set.polytope_list is just an AH polytope")
             if self.polytope_tree is None:
                 self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), key_vertex_count=self.key_vertex_count,
@@ -280,30 +278,29 @@ class SymbolicSystem_StateTree(StateTree):
             return list(self.state_idx.intersection(scaled_lu))
 
 class SymbolicSystem_OverR3T(OverR3T):
-    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_reachable_set=None, use_true_reachable_set=False, \
+    def __init__(self, sys, sampler, step_size, contains_goal_function = None, compute_last_reachable_set=None, use_true_reachable_set=False, \
                  nonlinear_dynamic_step_size=1e-2, use_convex_hull=True, goal_tolerance = 1e-2):
         self.sys = sys
         self.step_size = step_size
         self.contains_goal_function = contains_goal_function
         self.goal_tolerance = goal_tolerance
-        if compute_reachable_set is None:
-            def compute_reachable_set(state):
+        if compute_last_reachable_set is None:
+            def compute_last_reachable_set(state, reachable_set_polytope):
                 '''
                 Compute polytopic reachable set using the system - for last time index
                 :param h:
                 :return:
                 '''
                 deterministic_next_state = None
-                reachable_set_polytope = self.sys.get_reachable_polytopes(state, step_size=self.step_size, use_convex_hull=use_convex_hull)
-                if np.all(self.sys.get_linearization(state=state).B == 0):
-                    if use_true_reachable_set:
-                        deterministic_next_state=[state]
-                        for step in range(int(self.step_size / nonlinear_dynamic_step_size)):
-                            state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=nonlinear_dynamic_step_size)
-                            deterministic_next_state.append(state)
-                    else:
-                        deterministic_next_state = [state, self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
-                return PolytopeReachableSet(state,reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
+                # if np.all(self.sys.get_linearization(state=state).B == 0):
+                #     if use_true_reachable_set:
+                #         deterministic_next_state=[state]
+                #         for step in range(int(self.step_size / nonlinear_dynamic_step_size)):
+                #             state = self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=nonlinear_dynamic_step_size)
+                #             deterministic_next_state.append(state)
+                #     else:
+                #         deterministic_next_state = [state, self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
+                return PolytopeReachableSet(state, reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
-        OverR3T.__init__(self, self.sys.get_current_state(), compute_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)
+        OverR3T.__init__(self, self.sys.get_current_state(), compute_last_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)

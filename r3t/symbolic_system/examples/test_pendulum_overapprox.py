@@ -10,6 +10,8 @@ from r3t.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
 import os
+import scipy.io
+
 matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
 
@@ -165,6 +167,13 @@ def test_pendulum_planning():
         # if found_goal:
         #     break
         # allocated_time*=5
+
 if __name__=='__main__':
+
+    # # Global Variable
+    # mat = scipy.io.loadmat(
+    #     "/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat"
+    # )
+
     for i in range(1):
         test_pendulum_planning()
