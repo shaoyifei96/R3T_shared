@@ -9,10 +9,11 @@ from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box, \
     point_to_box_dmax, point_to_box_distance
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
+    def __init__(self, parent_state, polytope_list, generator_idx, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
                  use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
+        self.generator_idx = generator_idx
         try:
             self.aabb_list = [AH_polytope_to_box(p, return_AABB=True) for p in self.polytope_list]
         except TypeError:
@@ -32,7 +33,6 @@ class PolytopeReachableSet(ReachableSet):
         # assert(self.parent_distance<self.epsilon)
 
     def contains(self, goal_state, return_closest_state = True):
-
 
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
@@ -178,11 +178,13 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_idx = None
         # self.state_tree_p = index.Property()
         self.distance_scaling_array = distance_scaling_array
+
     def insert(self, state_id, reachable_set):
         try:
             iter(reachable_set.polytope_list)
             if self.polytope_tree is None:
                 self.polytope_tree = PolytopeTree(np.array(reachable_set.polytope_list),
+                                                  reachable_set.generator_idx,
                                                   key_vertex_count=self.key_vertex_count,
                                                   distance_scaling_array=self.distance_scaling_array)
                 # for d_neighbor_ids
@@ -285,7 +287,7 @@ class SymbolicSystem_OverR3T(OverR3T):
         self.contains_goal_function = contains_goal_function
         self.goal_tolerance = goal_tolerance
         if compute_last_reachable_set is None:
-            def compute_last_reachable_set(state, reachable_set_polytope):
+            def compute_last_reachable_set(state, reachable_set_polytope, generator_idx):
                 '''
                 Compute polytopic reachable set using the system - for last time index
                 :param h:
@@ -300,7 +302,7 @@ class SymbolicSystem_OverR3T(OverR3T):
                 #             deterministic_next_state.append(state)
                 #     else:
                 #         deterministic_next_state = [state, self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
-                return PolytopeReachableSet(state, reachable_set_polytope, sys=self.sys, contains_goal_function=self.contains_goal_function, \
+                return PolytopeReachableSet(state, reachable_set_polytope, generator_idx, sys=self.sys, contains_goal_function=self.contains_goal_function, \
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
         OverR3T.__init__(self, self.sys.get_current_state(), compute_last_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)

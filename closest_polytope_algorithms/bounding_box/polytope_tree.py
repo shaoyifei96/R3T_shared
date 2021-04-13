@@ -10,12 +10,14 @@ from closest_polytope_algorithms.utils.utils import build_key_point_kd_tree
 from rtree import index
 
 class PolytopeTree:
-    def __init__(self, polytopes, key_vertex_count = 0, distance_scaling_array = None):
+    def __init__(self, polytopes, generator_idx, key_vertex_count = 0, distance_scaling_array = None):
         '''
         Updated implementation using rtree
         :param polytopes:
         '''
-        self.polytopes = polytopes
+        self.polytopes = polytopes  # Zonotope lists
+        self.generator_idx_list = []
+        self.generator_idx_list.append(generator_idx)
         self.key_vertex_count = key_vertex_count
         # Create box data structure from zonotopes
         # self.type = self.polytopes[0].type
@@ -42,7 +44,7 @@ class PolytopeTree:
         # build key point tree for query box size guess
         self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree(self.polytopes, self.key_vertex_count, self.distance_scaling_array)
 
-    def insert(self, new_polytopes):
+    def insert(self, new_polytopes, new_generator_idx):
         '''
         Inserts a new polytope to the tree structure
         :param new_polytope:
@@ -63,9 +65,11 @@ class PolytopeTree:
             self.polytopes = np.concatenate((self.polytopes,np.array(new_polytopes)))
         else:
             self.polytopes.append(new_polytope)
-            # insert into kdtree
+        self.generator_idx_list.append(new_generator_idx)
+        # insert into kdtree
         # FIXME: Rebuilding a kDtree should not be necessary
-        self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree(self.polytopes, self.key_vertex_count, self.distance_scaling_array)
+        # self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree(self.polytopes, self.key_vertex_count, self.distance_scaling_array)
+        self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.key_vertex_count, self.distance_scaling_array)
 
     def find_closest_polytopes(self, original_query_point, return_intermediate_info=False, return_state_projection=False, may_return_multiple=False):
         #find closest centroid

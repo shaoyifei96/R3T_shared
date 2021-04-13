@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.spatial import cKDTree as KDTree
 from scipy.spatial import Voronoi
-from pypolycontain.utils.random_polytope_generator import get_k_random_edge_points_in_zonotope
+from pypolycontain.utils.random_polytope_generator import get_k_random_edge_points_in_zonotope_OverR3T
+# from pypolycontain.utils.random_polytope_generator import get_k_random_edge_points_in_zonotope
 
 def build_key_point_kd_tree(polytopes, key_vertex_count = 0, distance_scaling_array=None):
     if key_vertex_count > 0:
@@ -36,7 +37,45 @@ def build_key_point_kd_tree(polytopes, key_vertex_count = 0, distance_scaling_ar
                 key_point_to_zonotope_map[str(kp)] = [p]
         else:
             raise NotImplementedError
-    return KDTree(scaled_key_points),key_point_to_zonotope_map
+    return KDTree(scaled_key_points), key_point_to_zonotope_map
+
+
+def build_key_point_kd_tree_OverR3T(polytopes, generator_idx_list, key_vertex_count = 0, distance_scaling_array=None):
+
+    assert polytopes[0].__name__=='zonotope', "Not a Zonotope!"
+    dim = polytopes[0].x.shape[0]
+
+    if key_vertex_count > 0:
+        n = len(polytopes)*(1+2**key_vertex_count)
+    else:
+        n = len(polytopes)
+
+    key_point_to_zonotope_map = dict()
+    scaled_key_points = np.zeros((n,dim))
+    if distance_scaling_array is None:
+        distance_scaling_array = np.ones(n)
+        
+    for i, p in enumerate(polytopes):
+        if p.__name__ == 'zonotope' and key_vertex_count==0:
+            scaled_key_points[i,:] = np.multiply(distance_scaling_array, p.x[:, 0], dtype='float')
+            key_point_to_zonotope_map[str(p.x[:, 0])]=[p]
+        elif p.__name__=='zonotope':
+            scaled_key_points[i*(1+2**key_vertex_count),:] = np.multiply(distance_scaling_array, p.x[:, 0], dtype='float')
+            key_point_to_zonotope_map[str(p.x[:, 0])]=[p]
+
+            other_key_points = get_k_random_edge_points_in_zonotope_OverR3T(p, generator_idx_list[i], N=key_vertex_count) # key_vertex_count: number of keypoints for zonotope
+            # other_key_points = get_k_random_edge_points_in_zonotope(p, generator_idx_list[i], key_vertex_count) # key_vertex_count: number of keypoints for zonotope
+
+            scaled_other_key_points = np.multiply(distance_scaling_array, other_key_points, dtype='float')
+            scaled_key_points[i * (2 ** key_vertex_count + 1) + 1:(i + 1) * (2 ** key_vertex_count + 1),
+            :] = scaled_other_key_points
+            for kp in other_key_points:
+                key_point_to_zonotope_map[str(kp)] = [p]
+        else:
+            raise NotImplementedError
+    return KDTree(scaled_key_points), key_point_to_zonotope_map
+
+
 
 def build_polyotpe_centroid_voronoi_diagram(polytopes):
     n = len(polytopes)

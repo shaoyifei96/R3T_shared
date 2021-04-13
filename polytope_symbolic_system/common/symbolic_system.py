@@ -177,8 +177,13 @@ class DTContinuousSystem:
             # print("in convex hull")
             # print(f"x:{x}")
             # print(f"G:{G}")
-            return convex_hull_of_point_and_polytope(state.reshape(x.shape),zonotope(x,G))
-        return to_AH_polytope(zonotope(x,G)) #this is a bad approximation
+
+            # OverR3T
+            # return convex_hull_of_point_and_polytope(state.reshape(x.shape),zonotope(x,G))
+            return zonotope(x,G)
+        # OverR3T
+        # return to_AH_polytope(zonotope(x,G)) #this is a bad approximation
+        return zonotope(x,G) #this is NOT a bad approximation
 
 
     def get_linearization(self, state=None, u_bar = None, mode=None):

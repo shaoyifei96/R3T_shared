@@ -108,7 +108,9 @@ class OverR3TNode():
 
         self.complete_reachable_set = complete_reachable_set
         self.generator_list = generator_list
-        self.reachable_set = compute_last_reachable_set(self.state, self.get_last_reachable_set())
+
+        _reachable_set_zonotope, _last_generator_idx = self.get_last_reachable_set()
+        self.reachable_set = compute_last_reachable_set(self.state, _reachable_set_zonotope, _last_generator_idx)
 
 
     def __repr__(self):
@@ -147,7 +149,7 @@ class OverR3TNode():
     def get_last_reachable_set(self):
         ''' (New Function)
         '''
-        return self.complete_reachable_set[-1]
+        return self.complete_reachable_set[-1], self.generator_list[-1]
 
 
 class ReachableSetTree:

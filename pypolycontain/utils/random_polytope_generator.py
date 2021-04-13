@@ -69,7 +69,7 @@ def get_line_random_zonotopes(zonotope_count, dim, centroid_range=None, line_wid
 def get_k_random_edge_points_in_zonotope(zonotope, k, metric='l2'):
     if k==0:
         return None
-    k=min(k,zonotope.G.shape[1])
+    k = min(k, zonotope.G.shape[1])
     if metric == 'l2':
         norms = np.linalg.norm(zonotope.G, axis=0)
         indices = np.flip(np.argsort(norms))[0:k]
@@ -80,7 +80,33 @@ def get_k_random_edge_points_in_zonotope(zonotope, k, metric='l2'):
         s[indices,:] = directions.T
         # print(s)
         return (np.matmul(zonotope.G, s)+zonotope.x).T
-
-
     else:
         raise NotImplementedError
+
+
+def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k0=[0], kf=[1], metric='l2'):
+    ''' slice it for a particular parametere value and then find end point of zonotope.
+    keypoints are center of the zonotopes.
+
+    @ params:
+    ---
+    Z:      is the last zonotope
+    k0:     lowest value of parameter
+    kf:     highest value of parameter
+    N:      number of keypoints to consider
+    '''
+
+    keypoints = []
+    slice_dim=[4]
+
+    ki_list = np.linspace(k0, kf, N)
+    # print(ki_list)
+    slice_lists = np.vstack(np.meshgrid(*ki_list.T)).reshape(len(k0),-1).T
+    # print(slice_lists)
+
+    for slice_value in slice_lists:
+        # z, generator_idx=[305, 306, 307], slice_dim=[3, 4, 5], slice_value=[0, 0.2, 0.0004]
+        Z_sliced = zonotope_slice(zonotope, generator_idx[-1], slice_dim=slice_dim, slice_value=slice_value)
+        keypoints.append(project_zonotope(Z, dim = [0, 1], mode ='center'))
+
+    return keypoints
