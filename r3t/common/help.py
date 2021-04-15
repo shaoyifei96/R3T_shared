@@ -1,15 +1,16 @@
 import numpy as np
 from pypolycontain.lib.zonotope import zonotope, zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
+from pypolycontain.lib.zonotope import zonotope_inside
 from matplotlib.pyplot import show
 
 import scipy.io
 
 # --------------------- Global Variables ---------------------
-
-mat = scipy.io.loadmat(
-    "/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat"
-)
+# Simon: Why is this here? makes my code break... why need global
+# mat = scipy.io.loadmat(
+#     "/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat"
+# )
 
 # --------------------- helper functions ---------------------
 # slicing
@@ -26,7 +27,7 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[3, 4, 5], slice_value=
     newc = np.matmul(z.G[:, generator_idx].squeeze(), slice_lambda) + z.x
     newc = newc.reshape((-1, 1))
 
-    return zonotope(newc, newG, color="red")
+    return zonotope(newc, newG, color="green")
 
 
 def project_zonotope(Z, dim, mode ='full'):
@@ -40,8 +41,40 @@ def project_zonotope(Z, dim, mode ='full'):
         return Z.x[dim]
 
 
+def convert_obs_to_zonotope(c,theta_len,theta_dot_length):
+    '''
+    Assume 2D obstacles in dim 0 = theta and dim 1 = theta_dot space.
+    c = 2x1 G[:,0] = [theta_len/2  0] G[:,1] = [0 theta_dot_length/2]
+    or be creative with your G, doesn't have to have two dim and they can be related to
+    make osbtacle of any shape in state space, just know the speed is gonna suffer if you have more generators
+    '''
+    newc = c.reshape((-1, 1))
+    newG = np.array([[theta_len/2, 0], [0, theta_dot_length/2]])
+    return zonotope(newc, newG, color="red")
+
+def check_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
+    for zono_idx in reversed(range(len(zono_list))):#check last one first, largest, more likely to intersect with things
+        zono = zonotope_slice(zono_list[zono_idx],gen_idx_list[zono_idx],slice_value=np.concatenate((state_initial,k)))
+        for Z_obs in Z_obs_list:
+            if check_zono_contain(zono, Z_obs):
+                return True
+    return False
 
 
+def check_zono_contain(Z, Z_obs):
+    '''
+    assume obstacle exsists in the first two dim
+    '''
+    # print((Z_obs.x.shape),(Z.x[0:2,0].shape))
+    new_c = Z_obs.x - Z.x[0:2,0].reshape((2,1))
+    shrinked_G = Z.G[0:2,:]
+    # print(shrinked_G)
+    idx = np.argwhere(np.all(abs(shrinked_G[..., :]) < 1e-5, axis=0))
+    shrinked_G = np.delete(shrinked_G, idx, axis=1) #delete all zeros generators
+    new_G = np.concatenate((Z_obs.G,shrinked_G),axis=1) # there may be a lot of zeros since just using the first few dims of the G
+    buffered_Z = zonotope(new_c, new_G, color = "red")
+    # print("newc newG",new_c,new_G)
+    return zonotope_inside(buffered_Z, np.zeros((2,1)))
 # def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, k0=[0], kf=[1], N=5):
 #     ''' slice it for a particular parametere value and then find end point of zonotope.
 #     keypoints are center of the zonotopes.

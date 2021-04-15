@@ -2,6 +2,7 @@ import numpy as np
 from pypolycontain.lib.zonotope import zonotope,zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from matplotlib.pyplot import show
+from r3t.common.help import 
 
 import scipy.io# for matab import, zonotope array saved as cell arrary of matrix, dim x num_generator +1, MATLAB: c = Z(:,1) G = Z(:,2:end)
 def zonotope_slice_345(z,slice_idx,slice_value):
@@ -40,7 +41,7 @@ def zonotope_slice(z,generator_idx = [305,306,307],slice_dim=[3,4,5],slice_value
     return zonotope(newc,newG,color="red")
 
 # 3D mesh with one parameter range and two initial condition range
-mat = scipy.io.loadmat('/media/hardik/Windows/Ubuntu/R3T_shared/final_project_overapproximate_demo/test_zono.mat')
+mat = scipy.io.loadmat('/home/simon/Documents/MP_backup/motion_planning_598/final/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat')
             #var     #=0 #time 
 print("printing loaded data stats")
 print(f"mat info \n :{mat['info_FRS']}")
@@ -59,6 +60,10 @@ z1=zonotope(x_1,G_1,color="green")
 slice_value  = np.array([0.1324, -0.4025, 0.1827]) 
 zonotope_slice_345(z1,mat['info_FRS'][0] [10], slice_value)
 
+Z_obs = convert_obs_to_zonotope(np.array([1,2]),2.5,0.5)
+print("obs center and geneartor",Z_obs.x, Z_obs.G)
+
+A = convert_zono_obs_to_constraint(Z_obs,Z_obs)
 #info contain info about which generator to slice during online for each zonotope, in order [theta; thetadot; k]
 
 #don't think about try to viz, you are gonna run out of memory. 
