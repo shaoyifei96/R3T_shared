@@ -15,13 +15,14 @@ import scipy.io
 # --------------------- helper functions ---------------------
 # slicing
 
-def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[3, 4, 5], slice_value=[0, 0.2, 0.0004]):
+def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=[0, 0.2, 0.0004]):
+                                                #comeon!! this needs to subtract 1, fuk
     '''
     generator_idx: always len 3
     '''
 
     slice_G = z.G[slice_dim, generator_idx]
-
+    print(slice_G)
     slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
     newG = np.delete(z.G, generator_idx, 1)
     newc = np.matmul(z.G[:, generator_idx].squeeze(), slice_lambda) + z.x
@@ -53,8 +54,10 @@ def convert_obs_to_zonotope(c,theta_len,theta_dot_length):
     return zonotope(newc, newG, color="red")
 
 def check_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
+    print(zono_list, gen_idx_list,k, state_initial,Z_obs_list)
     for zono_idx in reversed(range(len(zono_list))):#check last one first, largest, more likely to intersect with things
-        zono = zonotope_slice(zono_list[zono_idx],gen_idx_list[zono_idx],slice_value=np.concatenate((state_initial,k)))
+        # print(zono_list[zono_idx],gen_idx_list[zono_idx],np.append(state_initial,k))
+        zono = zonotope_slice(zono_list[zono_idx],gen_idx_list[zono_idx],slice_value=np.append(state_initial,k))
         for Z_obs in Z_obs_list:
             if check_zono_contain(zono, Z_obs):
                 return True

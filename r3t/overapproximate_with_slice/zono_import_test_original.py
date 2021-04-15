@@ -2,43 +2,43 @@ import numpy as np
 from pypolycontain.lib.zonotope import zonotope,zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from matplotlib.pyplot import show
-from r3t.common.help import 
+from r3t.common.help import check_collision,convert_obs_to_zonotope,zonotope_slice
 
 import scipy.io# for matab import, zonotope array saved as cell arrary of matrix, dim x num_generator +1, MATLAB: c = Z(:,1) G = Z(:,2:end)
-def zonotope_slice_345(z,slice_idx,slice_value):
-    slice_dim = np.array([2,3,4])#slice number -1 since python
-    slice_G = z.G[slice_dim, slice_idx]
-    # print(slice_G.shape)
-    # print(z.G[:, slice_idx].shape)
+# def zonotope_slice_345(z,slice_idx,slice_value):
+#     slice_dim = np.array([2,3,4])#slice number -1 since python
+#     slice_G = z.G[slice_dim, slice_idx]
+#     # print(slice_G.shape)
+#     # print(z.G[:, slice_idx].shape)
 
-    slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])#MATLAB: slice_G\(slice_pt - slice_c);
-    # print(slice_lambda.shape)
-    newG = np.delete(z.G, slice_idx, 1)
-    newc =  np.matmul(z.G[:, slice_idx].squeeze(),slice_lambda) + z.x
-    print(f"slide_idx:{slice_idx}")
-    print(f"New center:{newc}") 
+#     slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])#MATLAB: slice_G\(slice_pt - slice_c);
+#     # print(slice_lambda.shape)
+#     newG = np.delete(z.G, slice_idx, 1)
+#     newc =  np.matmul(z.G[:, slice_idx].squeeze(),slice_lambda) + z.x
+#     print(f"slide_idx:{slice_idx}")
+#     print(f"New center:{newc}") 
 
-def zonotope_slice_34(z,slice_idx,slice_value):
-    slice_dim = np.array([2,3])#slice number -1 since python
-    slice_G = z.G[slice_dim, slice_idx]
+# def zonotope_slice_34(z,slice_idx,slice_value):
+#     slice_dim = np.array([2,3])#slice number -1 since python
+#     slice_G = z.G[slice_dim, slice_idx]
 
-    slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
-    newc =  np.matmul(z.G[:, slice_idx].squeeze(),slice_lambda) + z.x
-    print(f"slide_idx:{slice_idx}")
-    print(f"New center:{newc}") 
+#     slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
+#     newc =  np.matmul(z.G[:, slice_idx].squeeze(),slice_lambda) + z.x
+#     print(f"slide_idx:{slice_idx}")
+#     print(f"New center:{newc}") 
     
-    return zonotope(newc,newG,color="red")
+#     return zonotope(newc,newG,color="red")
 
 # generator_idx: always 3
-def zonotope_slice(z,generator_idx = [305,306,307],slice_dim=[3,4,5],slice_value = [0,0.2,0.0004]):
+# def zonotope_slice(z,generator_idx = [305,306,307],slice_dim=[3,4,5],slice_value = [0,0.2,0.0004]):
     
-    generator_idx = generator_idx[slice_dim-3]
-    slice_G = z.G[slice_dim, generator_idx]
+#     generator_idx = generator_idx[slice_dim-3]
+#     slice_G = z.G[slice_dim, generator_idx]
 
-    slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
-    newc =  np.matmul(z.G[:, generator_idx].squeeze(),slice_lambda) + z.x
+#     slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
+#     newc =  np.matmul(z.G[:, generator_idx].squeeze(),slice_lambda) + z.x
 
-    return zonotope(newc,newG,color="red")
+#     return zonotope(newc,newG,color="red")
 
 # 3D mesh with one parameter range and two initial condition range
 mat = scipy.io.loadmat('/home/simon/Documents/MP_backup/motion_planning_598/final/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat')
@@ -58,12 +58,12 @@ x_1=mat['save_FRS'][0] [10] [:,0] #center
 
 z1=zonotope(x_1,G_1,color="green")
 slice_value  = np.array([0.1324, -0.4025, 0.1827]) 
-zonotope_slice_345(z1,mat['info_FRS'][0] [10], slice_value)
-
+zonotope_slice(z1,mat['info_FRS'][0] [10], slice_value = slice_value)
+#zono_list[zono_idx],gen_idx_list[zono_idx],slice_value=np.append(state_initial,k)
 Z_obs = convert_obs_to_zonotope(np.array([1,2]),2.5,0.5)
 print("obs center and geneartor",Z_obs.x, Z_obs.G)
 
-A = convert_zono_obs_to_constraint(Z_obs,Z_obs)
+print(check_collision([z1], [mat['info_FRS'][0][10]],  0.1827, [0.1324, -0.4025], [Z_obs]))
 #info contain info about which generator to slice during online for each zonotope, in order [theta; thetadot; k]
 
 #don't think about try to viz, you are gonna run out of memory. 
