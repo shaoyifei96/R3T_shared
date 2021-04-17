@@ -4,6 +4,7 @@ from pypolycontain.lib.polytope import polytope
 from pypolycontain.lib.AH_polytope import AH_polytope, to_AH_polytope
 from time import time
 from multiprocessing import Pool
+from r3t.common.help import *
 
 
 def get_single_random_zonotope(argument):
@@ -105,7 +106,9 @@ def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k
     # print(slice_lists)
 
     for slice_value in slice_lists:
+        print("slice_value", slice_value)
         # z, generator_idx=[305, 306, 307], slice_dim=[3, 4, 5], slice_value=[0, 0.2, 0.0004]
+        print("generator_idx[-1], slice_dim=slice_dim", generator_idx[-1], slice_dim)
         Z_sliced = zonotope_slice(zonotope, generator_idx[-1], slice_dim=slice_dim, slice_value=slice_value)
         keypoints.append(project_zonotope(Z, dim = [0, 1], mode ='center'))
 

@@ -216,9 +216,6 @@ class OverR3T:
         self.state_tree.insert(self.root_id,self.root_node.state)
         self.reachable_set_tree = reachable_set_tree() #tree for fast node querying
 
-        # print()
-
-
         self.reachable_set_tree.insert(self.root_id, self.root_node.reachable_set)
         self.state_to_node_map = dict()
         self.state_to_node_map[self.root_id] = self.root_node
@@ -244,6 +241,7 @@ class OverR3T:
 
             # slice it for initial state
             slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
+            print("compuate_reachable_set_and_generator")
             Z_slice = zonotope_slice(Z, generator_idx=self.mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
 
             complete_reachable_set.append(Z_slice)
@@ -357,33 +355,39 @@ class OverR3T:
                 sample_count+=1
                 # map the states to nodes
                 try:
-                    # print("running sampler 1")
-                    nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list?
+                    print("running sampler 1")
+                    nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list? Answer: No.
                     discard = True
                     # print("running sampler 1_1")
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
                     # print("running sampler 1_2")
+
+                    print("nearest_state_id_list", nearest_state_id_list)
+                    exit()
                     # find the closest state in the reachable set and use it to extend the tree
-                    new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
-                    # print("running sampler 1_3")
+                    new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, save_true_dynamics_path=save_true_dynamics_path)
+                    
+                    
+                    
+                    print("running sampler 1_3")
                     new_state_id = hash(str(new_state))
-                    # print("running sampler 2")
+                    print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree
                     # if new_state_id in self.state_to_node_map or discard:
                     if new_state_id in self.state_to_node_map or discard:
                         # FIXME: how to prevent repeated state exploration?
                         # print('Warning: state already explored')
-                        # print("running sampler 3")
+                        print("running sampler 3")
                         continue  # #sanity check to prevent numerical errors
 
                     if not explore_deterministic_next_state:
-                        # print("running sampler 4")
+                        print("running sampler 4")
                         is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
                     else:
-                        # print("running sampler 5")
+                        print("running sampler 5")
                         is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
                 except Exception as e:
-                    # print('Caught %s' % e)
+                    print('Caught %s' % e)
                     # print("running sampler 6")
                     is_extended = False
                 if not is_extended:

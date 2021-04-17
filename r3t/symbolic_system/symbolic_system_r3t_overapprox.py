@@ -73,6 +73,14 @@ class PolytopeReachableSet(ReachableSet):
         raise NotImplementedError
 
 
+    def find_closest_state_OverR3T(self, query_point):
+
+        for p in self.polytope_list:
+            p_slice = zonotope_slice(p, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=[0, 0.2, 0.0004])
+        
+
+
+
     def find_closest_state(self, query_point, save_true_dynamics_path=False):
         '''
         Find the closest state from the query point to a given polytope
@@ -167,7 +175,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
     '''
     Polytopic reachable set with PolytopeTree
     '''
-    def __init__(self, key_vertex_count = 0, distance_scaling_array=None):
+    def __init__(self, key_vertex_count = 10, distance_scaling_array=None):
         ReachableSetTree.__init__(self)
         self.polytope_tree = None
         self.id_to_reachable_sets = {}
@@ -199,7 +207,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
             # It should go here because we have a zonotope
             # print("Convex hull, reachable_set.polytope_list is just an AH polytope")
             if self.polytope_tree is None:
-                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), key_vertex_count=self.key_vertex_count,
+                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), reachable_set.generator_idx, key_vertex_count=self.key_vertex_count,
                                                   distance_scaling_array=self.distance_scaling_array)
                 # for d_neighbor_ids
                 # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
@@ -213,23 +221,24 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_id_to_state[state_id] = reachable_set.parent_state
 
     def nearest_k_neighbor_ids(self, query_state, k=1, return_state_projection = False):
+        print("nearest_k_neighbor_ids")
         if k is None:
             if self.polytope_tree is None:
                 return None
             # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
-            best_polytopes, best_distance, state_proejctions = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True)
+            best_polytopes, best_distance, state_projections = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True)
             if not return_state_projection:
                 return [self.polytope_to_id[bp] for bp in best_polytopes]
-            return [self.polytope_to_id[bp] for bp in best_polytopes], best_polytopes, best_distance, state_proejctions
+            return [self.polytope_to_id[bp] for bp in best_polytopes], best_polytopes, best_distance, state_projections
 
         else:
             if self.polytope_tree is None:
                 return None
             # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
-            best_polytope, best_distance, state_proejction = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True)
+            best_polytope, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True)
             if not return_state_projection:
                 return [self.polytope_to_id[best_polytope[0]]]
-            return [self.polytope_to_id[best_polytope[0]]], best_polytope, [best_distance], [state_proejction]
+            return [self.polytope_to_id[best_polytope[0]]], best_polytope, [best_distance], [state_projection]
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         '''

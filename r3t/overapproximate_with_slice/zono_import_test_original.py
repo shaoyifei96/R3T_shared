@@ -2,7 +2,7 @@ import numpy as np
 from pypolycontain.lib.zonotope import zonotope,zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from matplotlib.pyplot import show
-from r3t.common.help import check_collision,convert_obs_to_zonotope,zonotope_slice
+from r3t.common.help import check_zonotope_collision, convert_obs_to_zonotope,zonotope_slice
 
 import scipy.io# for matab import, zonotope array saved as cell arrary of matrix, dim x num_generator +1, MATLAB: c = Z(:,1) G = Z(:,2:end)
 # def zonotope_slice_345(z,slice_idx,slice_value):
@@ -63,7 +63,7 @@ zonotope_slice(z1,mat['info_FRS'][0] [10], slice_value = slice_value)
 Z_obs = convert_obs_to_zonotope(np.array([1,2]),2.5,0.5)
 print("obs center and geneartor",Z_obs.x, Z_obs.G)
 
-print(check_collision([z1], [mat['info_FRS'][0][10]],  0.1827, [0.1324, -0.4025], [Z_obs]))
+print(check_zonotope_collision([z1], [mat['info_FRS'][0][10]],  0.1827, [0.1324, -0.4025], [Z_obs]))
 #info contain info about which generator to slice during online for each zonotope, in order [theta; thetadot; k]
 
 #don't think about try to viz, you are gonna run out of memory. 

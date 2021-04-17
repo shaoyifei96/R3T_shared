@@ -21,19 +21,35 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=
     generator_idx: always len 3
     '''
 
+    # print("z.G", z.G.shape)
+    print()
     slice_G = z.G[slice_dim, generator_idx]
-    print(slice_G)
-    slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
+    print("slice_dim", slice_dim)
+    print("generator_idx", generator_idx)
+    print("slice_G", slice_G.shape)
+    print("z.x[slice_dim]", z.x[slice_dim].shape)
+    # exit()
+
+    if slice_G.ndim == 1:
+        pass
+        slice_lambda = np.divide((slice_value - z.x[slice_dim]), slice_G)
+    else:
+        slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
     newG = np.delete(z.G, generator_idx, 1)
+    print("newG", newG.shape)
+    print("z.G[:, generator_idx].squeeze()", z.G[:, generator_idx].squeeze().shape)
+    print("slice_lambda", slice_lambda.shape)
     newc = np.matmul(z.G[:, generator_idx].squeeze(), slice_lambda) + z.x
+    print("newc", newc)
     newc = newc.reshape((-1, 1))
+    # exit()
 
     return zonotope(newc, newG, color="green")
 
 
 def project_zonotope(Z, dim, mode ='full'):
     '''
-    dim : list
+    dim : list, e.g. [0, 1]
     mode: center/full
     '''
     if mode == 'full':
@@ -53,7 +69,7 @@ def convert_obs_to_zonotope(c,theta_len,theta_dot_length):
     newG = np.array([[theta_len/2, 0], [0, theta_dot_length/2]])
     return zonotope(newc, newG, color="red")
 
-def check_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
+def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
     print(zono_list, gen_idx_list,k, state_initial,Z_obs_list)
     for zono_idx in reversed(range(len(zono_list))):#check last one first, largest, more likely to intersect with things
         # print(zono_list[zono_idx],gen_idx_list[zono_idx],np.append(state_initial,k))
@@ -66,7 +82,7 @@ def check_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
 
 def check_zono_contain(Z, Z_obs):
     '''
-    assume obstacle exsists in the first two dim
+    assume obstacle exists in the first two dim
     '''
     # print((Z_obs.x.shape),(Z.x[0:2,0].shape))
     new_c = Z_obs.x - Z.x[0:2,0].reshape((2,1))
@@ -78,6 +94,8 @@ def check_zono_contain(Z, Z_obs):
     buffered_Z = zonotope(new_c, new_G, color = "red")
     # print("newc newG",new_c,new_G)
     return zonotope_inside(buffered_Z, np.zeros((2,1)))
+
+
 # def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, k0=[0], kf=[1], N=5):
 #     ''' slice it for a particular parametere value and then find end point of zonotope.
 #     keypoints are center of the zonotopes.
