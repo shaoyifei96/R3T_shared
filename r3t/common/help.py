@@ -22,13 +22,16 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=
     '''
 
     # print("z.G", z.G.shape)
-    print()
+    # print()
+    generator_idx = np.array(generator_idx).squeeze()
     slice_G = z.G[slice_dim, generator_idx]
-    print("slice G",slice_G)
-    print("slice_dim", slice_dim)
-    print("generator_idx", generator_idx)
-    print("slice_G", slice_G.shape)
-    print("z.x[slice_dim]", z.x[slice_dim].shape)
+
+    # print("G",z.G.shape)
+    # print("slice G",slice_G)
+    # print("slice_dim", slice_dim)
+    # # print("generator_idx", generator_idx)
+    # print("slice_G", slice_G.shape)
+    # print("z.x[slice_dim]", z.x[slice_dim].shape)
     # exit()                          
     # gen_idx ={t0_gen:593,t0_dot:595,k:594}
     #                             593    594    595
@@ -39,19 +42,20 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=
 # t_dot_0                        0       0      0.5
 # k                              0       0.1    0
 # t                              0  
-
-    if slice_G.ndim == 1:
-        pass
-        slice_lambda = np.divide((slice_value - z.x[slice_dim]), slice_G)
-    else:
-        slice_lambda = np.linalg.solve(slice_G, slice_value - z.x[slice_dim])
     newG = np.delete(z.G, generator_idx, 1)
-    print("newG", newG.shape)
-    print("z.G[:, generator_idx].squeeze()", z.G[:, generator_idx].squeeze().shape)
-    print("slice_lambda", slice_lambda.shape)
-    newc = np.matmul(z.G[:, generator_idx].squeeze(), slice_lambda) + z.x
-    print("newc", newc)
-    newc = newc.reshape((-1, 1))
+    slice_lambda = np.divide((slice_value - z.x[slice_dim]), slice_G)
+    if len(slice_dim) == 1:
+        sliceable_G = z.G[:, generator_idx].reshape((-1,1))
+    else:
+        sliceable_G = z.G[:, generator_idx]
+
+    # print("newG", newG.shape)
+    # print("gen",generator_idx)
+    # print("sliceable_G", sliceable_G.shape)
+    # print("slice_lambda", np.reshape(slice_lambda,(-1,1)).shape)
+    newc = np.matmul(sliceable_G, np.reshape(slice_lambda,(-1,1))) + z.x.reshape((-1, 1))
+    # print("newc", newc,newc.shape)
+    # newc = newc.reshape((-1, 1))
     # exit()
 
     return zonotope(newc, newG, color="green")

@@ -48,10 +48,9 @@ def build_key_point_kd_tree_OverR3T(polytopes, generator_idx_list, key_vertex_co
     p0_projected = project_zonotope(polytopes[0], dim=[0, 1], mode='full')
     dim = p0_projected.x.shape[0]
 
-    if key_vertex_count > 0:
-        n = len(polytopes)*(1+2**key_vertex_count)
-    else:
-        n = len(polytopes)
+
+    n = key_vertex_count
+
 
     key_point_to_zonotope_map = dict()
     scaled_key_points = np.zeros((n,dim))
@@ -73,9 +72,8 @@ def build_key_point_kd_tree_OverR3T(polytopes, generator_idx_list, key_vertex_co
             key_point_to_zonotope_map[str(p_projected.x[:, 0])]=[p]
             other_key_points = get_k_random_edge_points_in_zonotope_OverR3T(p, generator_idx_list[i], N=key_vertex_count) # key_vertex_count: number of keypoints for zonotope
             # other_key_points = get_k_random_edge_points_in_zonotope(p, generator_idx_list[i], key_vertex_count) # key_vertex_count: number of keypoints for zonotope
-            scaled_other_key_points = np.multiply(distance_scaling_array, other_key_points, dtype='float')
-            scaled_key_points[i * (2 ** key_vertex_count + 1) + 1:(i + 1) * (2 ** key_vertex_count + 1),
-            :] = scaled_other_key_points
+            scaled_other_key_points = np.multiply(other_key_points,distance_scaling_array, dtype='float')
+            scaled_key_points = scaled_other_key_points
             for kp in other_key_points:
                 print("kp", kp)
                 key_point_to_zonotope_map[str(kp)] = [p]
