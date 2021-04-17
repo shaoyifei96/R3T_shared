@@ -14,7 +14,7 @@ import scipy.io
 
 # --------------------- helper functions ---------------------
 # slicing
-
+                    #   3x1                     
 def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=[0, 0.2, 0.0004]):
                                                 #comeon!! this needs to subtract 1, fuk
     '''
@@ -24,11 +24,21 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=
     # print("z.G", z.G.shape)
     print()
     slice_G = z.G[slice_dim, generator_idx]
+    print("slice G",slice_G)
     print("slice_dim", slice_dim)
     print("generator_idx", generator_idx)
     print("slice_G", slice_G.shape)
     print("z.x[slice_dim]", z.x[slice_dim].shape)
-    # exit()
+    # exit()                          
+    # gen_idx ={t0_gen:593,t0_dot:595,k:594}
+    #                             593    594    595
+#          c         G 6x600     t0_gen  k      t0_dot
+# t                              1       2      1
+# t_dot                          2       4      5
+# t0                             0.5     0      0
+# t_dot_0                        0       0      0.5
+# k                              0       0.1    0
+# t                              0  
 
     if slice_G.ndim == 1:
         pass

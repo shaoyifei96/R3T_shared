@@ -104,7 +104,8 @@ def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k
     # print(ki_list)
     slice_lists = np.vstack(np.meshgrid(*ki_list.T)).reshape(len(k0),-1).T
     # print(slice_lists)
-
+    assert(len(generator_idx) == 3)
+    generator_idx = generator_idx[2] - int(generator_idx[2]>generator_idx[0]) - int(generator_idx[2]>generator_idx[1])
     for slice_value in slice_lists:
         print("slice_value", slice_value)
         # z, generator_idx=[305, 306, 307], slice_dim=[3, 4, 5], slice_value=[0, 0.2, 0.0004]
