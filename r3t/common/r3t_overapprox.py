@@ -242,11 +242,8 @@ class OverR3T:
 
             # slice it for initial state
             slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
-            print("compuate_reachable_set_and_generator")
             Z_slice = zonotope_slice(Z, generator_idx=self.mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
-
             complete_reachable_set.append(Z_slice)
-
         return complete_reachable_set, generator_list
 
 

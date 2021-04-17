@@ -38,6 +38,7 @@ class PolytopeTree:
         self.distance_scaling_array = distance_scaling_array
         self.repeated_scaling_matrix = np.tile(self.distance_scaling_array, 2)
         for i, z in enumerate(self.polytopes):
+
             z_projected = project_zonotope(z, dim=[0, 1], mode='full')
             lu = np.multiply(self.repeated_scaling_matrix, AH_polytope_to_box(to_AH_polytope(z_projected)))
             # assert(hash(z) not in self.index_to_polytope_map)

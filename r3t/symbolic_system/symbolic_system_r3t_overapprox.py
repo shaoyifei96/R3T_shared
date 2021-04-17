@@ -303,6 +303,7 @@ class SymbolicSystem_OverR3T(OverR3T):
                 :return:
                 '''
                 deterministic_next_state = None
+                print("compute_last_reachable_set X ",reachable_set_polytope.x.shape)
                 # if np.all(self.sys.get_linearization(state=state).B == 0):
                 #     if use_true_reachable_set:
                 #         deterministic_next_state=[state]
