@@ -138,3 +138,4 @@ dataset/
 checkpoints/
 
 *.zip
+*.mat
