@@ -202,7 +202,8 @@ class OverR3T:
         :param reachable_set_tree: A StateTree object for fast querying
         :param path_class: A class handel that is used to represent path
         '''
-        self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat")
+        # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat")
+        self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/FRS_pendulum_theta_0_theta_dot_0_k_0.1.mat")
         complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
         self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
