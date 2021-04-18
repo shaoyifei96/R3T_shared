@@ -110,6 +110,7 @@ class OverR3TNode():
         self.generator_list = generator_list
 
         _reachable_set_zonotope, _last_generator_idx = self.get_last_reachable_set()
+        self.last_generator_idx = _last_generator_idx
         self.reachable_set = compute_last_reachable_set(self.state, _reachable_set_zonotope, _last_generator_idx)
 
 
@@ -203,7 +204,7 @@ class OverR3T:
         :param path_class: A class handel that is used to represent path
         '''
         # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat")
-        self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/FRS_pendulum_theta_0_theta_dot_0_k_0.1.mat")
+        self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/data/frs/FRS_pendulum_theta_0_theta_dot_0_k_0.mat")
         complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
         self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
@@ -247,7 +248,6 @@ class OverR3T:
         return complete_reachable_set, generator_list
 
 
-
     def create_child_node(self, parent_node, child_state, true_dynamics_path, cost_from_parent = None, path_from_parent = None):
         '''
         Given a child state reachable from a parent node, create a node with that child state
@@ -271,6 +271,35 @@ class OverR3T:
         parent_node.children.add(new_node)
         return new_node
 
+
+    # def extend(self, new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True):
+    #     """
+
+    #     :param new_state:
+    #     :param nearest_node:
+    #     :param true_dynamics_path:
+    #     :param explore_deterministic_next_state:
+    #     :return: is_extended, new_node, deterministic_next_state
+    #     """
+    #     # check for obstacles
+    #     if explore_deterministic_next_state:
+    #         cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
+    #                                                                                       return_deterministic_next_state=explore_deterministic_next_state)
+    #     else:
+    #         cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state, return_deterministic_next_state=explore_deterministic_next_state)
+    #     #FIXME: Support for partial extensions
+    #     if path is None:
+    #         if explore_deterministic_next_state:
+    #             return False, None, None
+    #         else:
+    #             return False, None
+    #     new_node = self.create_child_node(nearest_node, new_state, cost_from_parent=cost_to_go, path_from_parent=path, true_dynamics_path=true_dynamics_path)
+    #     if explore_deterministic_next_state:
+    #         return True, new_node, deterministic_next_state
+    #     else:
+    #         return True, new_node
+
+
     def extend(self, new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True):
         """
 
@@ -281,22 +310,19 @@ class OverR3T:
         :return: is_extended, new_node, deterministic_next_state
         """
         # check for obstacles
+        # cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state, return_deterministic_next_state=explore_deterministic_next_state)
         if explore_deterministic_next_state:
             cost_to_go, path, deterministic_next_state = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state,
-                                                                                          return_deterministic_next_state=explore_deterministic_next_state)
+                                                                                            return_deterministic_next_state=explore_deterministic_next_state)
         else:
             cost_to_go, path = nearest_node.reachable_set.plan_collision_free_path_in_set(new_state, return_deterministic_next_state=explore_deterministic_next_state)
-        #FIXME: Support for partial extensions
-        if path is None:
-            if explore_deterministic_next_state:
-                return False, None, None
-            else:
-                return False, None
-        new_node = self.create_child_node(nearest_node, new_state, cost_from_parent=cost_to_go, path_from_parent=path, true_dynamics_path=true_dynamics_path)
+        # new_node = self.create_child_node(nearest_node, new_state, cost_from_parent=cost_to_go, path_from_parent=path, true_dynamics_path=true_dynamics_path)
+        new_node = self.create_child_node(nearest_node, new_state, cost_from_parent=None, path_from_parent=None, true_dynamics_path=true_dynamics_path)
         if explore_deterministic_next_state:
             return True, new_node, deterministic_next_state
         else:
             return True, new_node
+            
 
     def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e3),\
                                  save_true_dynamics_path = False):
@@ -349,42 +375,37 @@ class OverR3T:
             sample_is_valid = False
             sample_count = 0
             while not sample_is_valid:
+
                 random_sample = self.sampler()
                 sample_count+=1
                 # map the states to nodes
                 try:
-                    print("running sampler 1")
+                    # print("running sampler 1")
 
-                    nearest_state_id_list, best_keypoints = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
-                    # discard = True
-                    # # print("running sampler 1_1")
-                    # nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
-                    # # print("running sampler 1_2")
-                    print("nearest_state_id_list", nearest_state_id_list)
-                    print("best_keypoints", best_keypoints)
+                    nearest_state_id_list, k_closest = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
+                    nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
+                    # print("nearest_state_id_list", nearest_state_id_list)
+                    # print("k_closest", k_closest)
 
                     # # find the closest state in the reachable set and use it to extend the tree
                     # # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
-                    # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample)
-                    exit()
-
-
-                    print("running sampler 1_3")
+                    new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
+                    discard = False     # TODO: Make it True and reconsider for collision checking
                     new_state_id = hash(str(new_state))
-                    print("running sampler 2")
+                    # print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree
                     # if new_state_id in self.state_to_node_map or discard:
                     if new_state_id in self.state_to_node_map or discard:
                         # FIXME: how to prevent repeated state exploration?
                         # print('Warning: state already explored')
-                        print("running sampler 3")
-                        continue  # #sanity check to prevent numerical errors
+                        # print("running sampler 3")
+                        continue    # sanity check to prevent numerical errors
 
                     if not explore_deterministic_next_state:
-                        print("running sampler 4")
+                        # print("running sampler 4")
                         is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
                     else:
-                        print("running sampler 5")
+                        # print("running sampler 5")
                         is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
                 except Exception as e:
                     print('Caught %s' % e)
@@ -402,7 +423,9 @@ class OverR3T:
                 print('Warning: sample count %d' %sample_count)  # just warning that cannot get to a new sample even after so long
             if not explore_deterministic_next_state:
                 # print("running search 3")
+
                 self.reachable_set_tree.insert(new_state_id, new_node.reachable_set)
+
                 self.state_tree.insert(new_state_id, new_node.state)
                 try:
                     assert(new_state_id not in self.state_to_node_map)
@@ -419,6 +442,9 @@ class OverR3T:
                 #In "find path" mode, if the goal is in the reachable set, we are done
                 contains_goal, true_dynamics_path = new_node.reachable_set.contains_goal(self.goal_state)
                 if contains_goal:
+
+                    print("build_tree_to_goal_state - Contains goal, explore_deterministic_next_state=FALSE")
+
                     # check for obstacles
                     # add the goal node to the tree
                     # cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
@@ -462,6 +488,9 @@ class OverR3T:
                 if iteration_count == max_nodes_to_add-1:
                     print('Warning: hit max_nodes_to_add')
                 for new_node in nodes_to_add:
+
+                    # print("build_tree_to_goal_state - Add new_node")
+
                     new_state_id = hash(str(new_node.state))
                     try:
                         assert(new_state_id not in self.state_to_node_map)
@@ -480,6 +509,8 @@ class OverR3T:
                     #In "find path" mode, if the goal is in the reachable set, we are done
                     contains_goal, true_dynamics_path = new_node.reachable_set.contains_goal(self.goal_state)
                     if contains_goal:
+                        print("build_tree_to_goal_state - Contains goal")
+
                     # check for obstacles
                         cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
                         #allow for fuzzy goal check

@@ -16,6 +16,7 @@ from matplotlib.collections import PatchCollection
 from scipy.spatial import ConvexHull
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import r3t.common as common
 
 try:
     from pypolycontain.lib.operations import AH_polytope_vertices
@@ -158,7 +159,10 @@ def visualize_2D_AH_polytope(list_of_AH_polytopes,a=1.5,color=None,alpha=0.5,fig
     p_list=[]
     v_all=np.empty((0,2))
     for Q in list_of_AH_polytopes:
-        v,w=AH_polytope_vertices(Q,N=N,epsilon=epsilon)
+        assert Q.type == 'zonotope'
+        Q_projected = common.help.project_zonotope(Q, dim=[0, 1], mode ='full')
+        v,w=AH_polytope_vertices(Q_projected,N=N,epsilon=epsilon)
+
         # Minkowski sum with epsilon ball
         try:
             v=v[ConvexHull(v).vertices,:]

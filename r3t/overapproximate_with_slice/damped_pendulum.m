@@ -7,7 +7,7 @@ function dydt = damped_pendulum(t,y,k,y0)
    
     % for code simplicity taking tau = tau/m/L^2 and alpha = \alpha/m/L^2
     
-    %k = spd_change +-1
+    %k = spd_change +-(3 or 4)
     %
     L = 1.0;    % lentth of pendulum
     g = 9.81;    % gravitational acceleration

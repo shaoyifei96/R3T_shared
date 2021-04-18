@@ -73,12 +73,23 @@ class PolytopeReachableSet(ReachableSet):
         raise NotImplementedError
 
 
-    def find_closest_state_OverR3T(self, query_point):
-
-        for p in self.polytope_list:
-            p_slice = zonotope_slice(p, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=[0, 0.2, 0.0004])
-        
-
+    def find_closest_state_OverR3T(self, query_point, k_closest, K=10):
+        # TODO: Add Cost Later
+        # u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
+        # #simulate nonlinear forward dynamics
+        state = self.parent_state
+        state_list = [self.parent_state]
+        for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
+            u = K * (k_closest - state[1])
+            try:
+                state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
+                        starting_state= state)
+                state_list.append(state)
+            except Exception as e:
+                print('Caught %s' %e)
+                return np.ndarray.flatten(closest_point), np.asarray([])
+        # print("state_list", state_list)
+        return np.ndarray.flatten(state), state_list
 
 
     def find_closest_state(self, query_point, save_true_dynamics_path=False):
@@ -212,7 +223,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
                 # for d_neighbor_ids
                 # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
             else:
-                self.polytope_tree.insert(np.array([reachable_set.polytope_list]))
+                self.polytope_tree.insert(np.array([reachable_set.polytope_list]), reachable_set.generator_idx)
             self.id_to_reachable_sets[state_id] = reachable_set
             self.polytope_to_id[reachable_set.polytope_list] = state_id
         # for d_neighbor_ids
@@ -221,35 +232,18 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_id_to_state[state_id] = reachable_set.parent_state
 
     def nearest_k_neighbor_ids(self, query_state, k=1, return_state_projection = False):
-        print("nearest_k_neighbor_ids")
+        # print("nearest_k_neighbor_ids")
 
         if self.polytope_tree is None:
-                return None
+            return None
         # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
-        best_polytope, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True)
+        best_polytope, k_closest, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True, ball='l2')
         # print("len(best_polytope)", len(best_polytope)) # always 1
-        keypoints = [np.fromstring(k) for k, v in self.polytope_tree.key_point_to_zonotope_map.items() if v[0] == best_polytope]
-        # print("keypoints", keypoints) # keypoints fo the best_polytope
-
-        # Find the best keypoint: closest to query_state
-
-        # TODO: Implement this
-        def find_closest_keypoint():
-            delta=(x_vector - x_nearest).reshape(Q.n)
-            if ball=="infinity":
-                d=np.linalg.norm(delta,ord=np.inf)
-            elif ball=="l1":
-                d=np.linalg.norm(delta,ord=1)
-            elif ball=="l2":
-                d=np.linalg.norm(np.multiply(distance_scaling_array, delta),ord=2)
-            else:
-                raise NotImplementedError
-
 
         best_polytopes_list = [self.polytope_to_id[bp] for bp in best_polytope]
         if not return_state_projection:
-            return best_polytopes_list[:k], best_keypoints
-        return best_polytopes_list[:k], best_polytope, [best_distance], [state_projection]
+            return best_polytopes_list[:k], k_closest
+        return best_polytopes_list[:k], k_closest, best_polytope, [best_distance], [state_projection]
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         '''
@@ -314,7 +308,8 @@ class SymbolicSystem_OverR3T(OverR3T):
                 :return:
                 '''
                 deterministic_next_state = None
-                print("compute_last_reachable_set X ",reachable_set_polytope.x.shape)
+                # print("compute_last_reachable_set X ",reachable_set_polytope.x.shape)
+
                 # if np.all(self.sys.get_linearization(state=state).B == 0):
                 #     if use_true_reachable_set:
                 #         deterministic_next_state=[state]

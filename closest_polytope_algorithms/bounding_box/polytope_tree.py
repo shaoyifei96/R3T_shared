@@ -59,13 +59,20 @@ class PolytopeTree:
         '''
         # insert into rtree
         for new_polytope in new_polytopes:
+            assert new_polytope.type == 'zonotope'
             if new_polytope.type == 'zonotope':
-                lu = zonotope_to_box(new_polytope)
+                new_polytope_projected = project_zonotope(new_polytope, dim=[0, 1], mode='full')
+                lu = zonotope_to_box(new_polytope_projected)
+                # lu = np.multiply(self.repeated_scaling_matrix, AH_polytope_to_box(to_AH_polytope(z_projected)))
+
             elif new_polytope.type == 'AH_polytope' or 'H-polytope':
                 lu = AH_polytope_to_box(new_polytope)
             else:
                 raise NotImplementedError
-            self.idx.insert(hash(new_polytope), np.multiply(self.repeated_scaling_matrix,lu))
+
+            self.idx.insert(hash(new_polytope), np.multiply(self.repeated_scaling_matrix, lu))
+
+
             # assert (hash(new_polytope) not in self.index_to_polytope_map)
             self.index_to_polytope_map[hash(new_polytope)] = new_polytope
         if isinstance(self.polytopes, np.ndarray):
@@ -78,9 +85,9 @@ class PolytopeTree:
         # self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree(self.polytopes, self.key_vertex_count, self.distance_scaling_array)
         self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.key_vertex_count, self.distance_scaling_array)
 
-    def find_closest_polytopes(self, original_query_point, return_intermediate_info=False, return_state_projection=False, may_return_multiple=False):
+    def find_closest_polytopes(self, original_query_point, return_intermediate_info=False, return_state_projection=False, may_return_multiple=False, ball="infinity"):
 
-        print("find_closest_polytopes")
+        # print("find_closest_polytopes")
         
         #find closest centroid
         # try:
@@ -200,16 +207,38 @@ class PolytopeTree:
                     # best_inf_distance = inf_pivot_distance
                     best_polytope = {pivot_polytope}   
 
-            print("find_closest_polytopes - END")
+            # print("find_closest_polytopes - END")
          
+
+            # print("find_closest_keypoints")
+            keypoints = np.array([np.fromstring(k) for k, v in self.key_point_to_zonotope_map.items() if v[0] == list(best_polytope)])
+            # print("keypoints", keypoints)
+
+            # Find the best keypoint: closest to query_state
+            delta = keypoints - original_query_point
+
+            if ball=="infinity":
+                d=np.linalg.norm(delta,ord=np.inf, axis=1)
+            elif ball=="l1":
+                d=np.linalg.norm(delta,ord=1, axis=1)
+            elif ball=="l2":
+                d=np.linalg.norm(np.multiply(self.distance_scaling_array, delta), ord=2, axis=1)
+            else:
+                raise NotImplementedError
+
+            closest_keypoint = keypoints[np.argmin(d), :]
+            _, k_closest = self.key_point_to_zonotope_map[closest_keypoint.tostring()]
+            # print("k_closest", k_closest[0])
+            # print("find_closest_keypoints - END")
+
             if return_intermediate_info:
-                return np.atleast_1d(list(best_polytope)[0]), best_scaled_distance, evaluated_zonotopes, heuristic_box_lu
+                return np.atleast_1d(list(best_polytope)[0]), k_closest[0], best_scaled_distance, evaluated_zonotopes, heuristic_box_lu
             if return_state_projection:
                 if not may_return_multiple:
-                    return np.atleast_1d(list(best_polytope)[0]), best_scaled_distance, polytope_state_projection[list(best_polytope)[0]]
+                    return np.atleast_1d(list(best_polytope)[0]), k_closest[0], best_scaled_distance, polytope_state_projection[list(best_polytope)[0]]
                 else:
-                    return np.asarray(list(best_polytope)), best_scaled_distance, np.asarray([polytope_state_projection[bp].flatten() for bp in best_polytope])
-            return np.atleast_1d(list(best_polytope)[0])
+                    return np.asarray(list(best_polytope)), k_closest[0], best_scaled_distance, np.asarray([polytope_state_projection[bp].flatten() for bp in best_polytope])
+            return np.atleast_1d(list(best_polytope)[0]), k_closest[0]
 #
 # class PolytopeTree_Old:
 #     '''

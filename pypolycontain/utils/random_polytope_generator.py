@@ -85,7 +85,7 @@ def get_k_random_edge_points_in_zonotope(zonotope, k, metric='l2'):
         raise NotImplementedError
 
 
-def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k0=[0], kf=[1], metric='l2'):
+def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k0=[-0.5], kf=[0.5], metric='l2'):
     ''' slice it for a particular parametere value and then find end point of zonotope.
     keypoints are center of the zonotopes.
 

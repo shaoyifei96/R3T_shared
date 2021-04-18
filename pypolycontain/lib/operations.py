@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+# from r3t.common.help import project_zonotope
 # Scipy
 try:
     import scipy.linalg as spa
@@ -375,6 +376,10 @@ def AH_polytope_vertices(P,N=200,epsilon=0.001,solver="Gurobi"):
         if type(P.vertices_2D) == type(None):
             raise Exception
     except:
+
+        # assert P.type == 'zonotope'
+        # P_projected = project_zonotope(P, dim=[0, 1], mode ='full')
+
         Q=to_AH_polytope(P)
         v=np.empty((N,2))
         prog=MP.MathematicalProgram()
