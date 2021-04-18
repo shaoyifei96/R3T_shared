@@ -3,8 +3,10 @@ from pypolycontain.lib.zonotope import zonotope,zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from matplotlib.pyplot import show
 from r3t.common.help import check_zonotope_collision, convert_obs_to_zonotope,zonotope_slice
+from sys import getsizeof
 
 import scipy.io# for matab import, zonotope array saved as cell arrary of matrix, dim x num_generator +1, MATLAB: c = Z(:,1) G = Z(:,2:end)
+import os
 # def zonotope_slice_345(z,slice_idx,slice_value):
 #     slice_dim = np.array([2,3,4])#slice number -1 since python
 #     slice_G = z.G[slice_dim, slice_idx]
@@ -39,8 +41,28 @@ import scipy.io# for matab import, zonotope array saved as cell arrary of matrix
 #     newc =  np.matmul(z.G[:, generator_idx].squeeze(),slice_lambda) + z.x
 
 #     return zonotope(newc,newG,color="red")
+# entries = os.listdir('/home/simon/Documents/MP_backup/motion_planning_598/frs_files/')
+basepath = '/home/simon/Documents/MP_backup/motion_planning_598/frs_files/'
+frs_dict = {}#FRS_pendulum_theta_0_theta_dot_0_k_2
+for entry in os.listdir(basepath):
+    if os.path.isfile(os.path.join(basepath, entry)):
+        mat = scipy.io.loadmat(os.path.join(basepath, entry))
+        list_of_words = entry.split('_')
+        print("theta=",int(list_of_words[3]))
+        print("theta_dot=",int(list_of_words[6]))
+        print("theta_k=",int(list_of_words[8].split('.')[0]))
+        frs_dict[(int(list_of_words[3]),int(list_of_words[6]),int(list_of_words[8].split('.')[0]))] = mat
+        # start = entry.index("_theta_")
+        # end   = entry.index("_theta_dot_")
+        #    = entry.index("_theta_dot_")
 
+        # print("theta=",int(entry[start+7:end]),entry[start+7:end])
+        # print("theta=",int(entry[start+7:end]),)
+        # print("theta=",entry[start+7:end])
 # 3D mesh with one parameter range and two initial condition range
+print(getsizeof(frs_dict))
+exit()
+
 mat = scipy.io.loadmat('/home/simon/Documents/MP_backup/motion_planning_598/final/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat')
             #var     #=0 #time 
 print("printing loaded data stats")
