@@ -354,19 +354,21 @@ class OverR3T:
                 # map the states to nodes
                 try:
                     print("running sampler 1")
-                    nearest_state_id_list = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1))  # FIXME: necessary to cast to list? Answer: No.
-                    discard = True
-                    # print("running sampler 1_1")
-                    nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
-                    # print("running sampler 1_2")
 
+                    nearest_state_id_list, best_keypoints = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
+                    # discard = True
+                    # # print("running sampler 1_1")
+                    # nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
+                    # # print("running sampler 1_2")
                     print("nearest_state_id_list", nearest_state_id_list)
+                    print("best_keypoints", best_keypoints)
+
+                    # # find the closest state in the reachable set and use it to extend the tree
+                    # # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
+                    # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample)
                     exit()
-                    # find the closest state in the reachable set and use it to extend the tree
-                    new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, save_true_dynamics_path=save_true_dynamics_path)
-                    
-                    
-                    
+
+
                     print("running sampler 1_3")
                     new_state_id = hash(str(new_state))
                     print("running sampler 2")

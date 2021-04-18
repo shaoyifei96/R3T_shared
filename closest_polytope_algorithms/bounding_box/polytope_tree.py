@@ -79,10 +79,8 @@ class PolytopeTree:
         self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.key_vertex_count, self.distance_scaling_array)
 
     def find_closest_polytopes(self, original_query_point, return_intermediate_info=False, return_state_projection=False, may_return_multiple=False):
-        
-        
+
         print("find_closest_polytopes")
-        
         
         #find closest centroid
         # try:
@@ -94,25 +92,33 @@ class PolytopeTree:
         # Construct centroid box
         scaled_query_point = np.multiply(self.distance_scaling_array, original_query_point.flatten())
         _x, ind = self.scaled_key_point_tree.query(np.ndarray.flatten(scaled_query_point))
+
         scaled_closest_centroid = self.scaled_key_point_tree.data[ind]
         #Use dist(polytope, query) as upper bound
         evaluated_zonotopes = []
-        centroid_zonotopes = self.key_point_to_zonotope_map[str(np.divide(scaled_closest_centroid, self.distance_scaling_array))]
+        centroid_zonotopes, k_zonotopes = self.key_point_to_zonotope_map[np.divide(scaled_closest_centroid, self.distance_scaling_array).tostring()]
+
+        # print("self.key_point_to_zonotope_map", self.key_point_to_zonotope_map)
+        # print("string", str(np.divide(scaled_closest_centroid, self.distance_scaling_array)))
+        # print("k_zonotopes", k_zonotopes)
+        # print("centroid_zonotopes", centroid_zonotopes)
+
         polytope_state_projection = {}
         dist_to_query = {}
         # inf_dist_to_query = {}
 
-        assert(len(centroid_zonotopes)==1)
+        # assert(len(centroid_zonotopes)==1)
         evaluated_zonotopes.extend(centroid_zonotopes)
+
+        # Optimizer: The distance_point_polytope line gives warning
+        # print()
+        # print("centroid_zonotopes[0]", centroid_zonotopes[0].x)
+        # print("original_query_point", original_query_point)
         zd, state = distance_point_polytope(project_zonotope(centroid_zonotopes[0], dim=[0, 1], mode ='full'), original_query_point, ball='l2', distance_scaling_array=self.distance_scaling_array)
-        print("find_closest_polytopes 1")
+        
         # zd = distance_point_polytope(cz, query_point, ball='l2')[0]
         best_scaled_distance=zd
         # best_inf_distance=zd
-
-        print("find_closest_polytopes 2")
-
-
         best_polytope={centroid_zonotopes[0]}
         dist_to_query[centroid_zonotopes[0]] = best_scaled_distance
         polytope_state_projection[centroid_zonotopes[0]] = state
@@ -121,10 +127,6 @@ class PolytopeTree:
         scaled_aabb_offsets = np.abs(state.flatten()-original_query_point.flatten())*1.001
         u = original_query_point.flatten() - scaled_aabb_offsets
         v = original_query_point.flatten() + scaled_aabb_offsets
-
-        print("find_closest_polytopes 3")
-
-
         heuristic_box_lu = np.concatenate([u, v])
         # scale the query box
         scaled_heuristic_box_lu = np.multiply(self.repeated_scaling_matrix, heuristic_box_lu)
@@ -133,10 +135,6 @@ class PolytopeTree:
         candidate_ids = list(self.idx.intersection(scaled_heuristic_box_lu))
         # print('Evaluating %d zonotopes') %len(candidate_boxes)
         #map back to zonotopes
-
-        print("find_closest_polytopes 3")
-
-
         if len(candidate_ids)==0:
             # This should never happen
             raise ValueError('No closest zonotope found!')
@@ -154,9 +152,6 @@ class PolytopeTree:
             #     evaluated_zonotopes.append(cb.polytope)
             #find the closest zonotope with randomized approach]
             while(len(candidate_ids)>=1):
-                print("find_closest_polytopes 4")
-
-
                 if best_scaled_distance < 1e-9:
                     # point is contained by polytope, break
                     break
@@ -164,8 +159,7 @@ class PolytopeTree:
                 #solve linear program for the sampled polytope
                 pivot_polytope = self.index_to_polytope_map[candidate_ids[sample]]
                 if pivot_polytope in best_polytope:
-                    print("In best_polytope!!!!")
-                    #get rid of this polytope
+                    # get rid of this polytope
                     candidate_ids[sample], candidate_ids[-1] = candidate_ids[-1], candidate_ids[sample]
                     candidate_ids = candidate_ids[0:-1]
                     continue
@@ -204,7 +198,10 @@ class PolytopeTree:
                     candidate_ids = list(self.idx.intersection(scaled_heuristic_box_lu))
                     best_scaled_distance = pivot_distance
                     # best_inf_distance = inf_pivot_distance
-                    best_polytope = {pivot_polytope}            
+                    best_polytope = {pivot_polytope}   
+
+            print("find_closest_polytopes - END")
+         
             if return_intermediate_info:
                 return np.atleast_1d(list(best_polytope)[0]), best_scaled_distance, evaluated_zonotopes, heuristic_box_lu
             if return_state_projection:

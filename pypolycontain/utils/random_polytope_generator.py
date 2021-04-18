@@ -94,7 +94,7 @@ def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k
     Z:      is the last zonotope
     k0:     lowest value of parameter
     kf:     highest value of parameter
-    N:      number of keypoints to consider
+    N:      number of keypoints to consider, when slicing only on k, return N items
     '''
 
     keypoints = []
@@ -111,4 +111,4 @@ def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k
         Z_sliced = zonotope_slice(zonotope, generator_idx[-1], slice_dim=slice_dim, slice_value=slice_value)
         keypoints.append(project_zonotope(Z_sliced, dim = [0, 1], mode ='center'))
 
-    return np.array(keypoints).squeeze()
+    return np.array(keypoints).squeeze(), slice_lists

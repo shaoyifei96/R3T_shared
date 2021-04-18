@@ -222,23 +222,34 @@ class PolytopeReachableSetTree(ReachableSetTree):
 
     def nearest_k_neighbor_ids(self, query_state, k=1, return_state_projection = False):
         print("nearest_k_neighbor_ids")
-        if k is None:
-            if self.polytope_tree is None:
-                return None
-            # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
-            best_polytopes, best_distance, state_projections = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True)
-            if not return_state_projection:
-                return [self.polytope_to_id[bp] for bp in best_polytopes]
-            return [self.polytope_to_id[bp] for bp in best_polytopes], best_polytopes, best_distance, state_projections
 
-        else:
-            if self.polytope_tree is None:
+        if self.polytope_tree is None:
                 return None
-            # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
-            best_polytope, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True)
-            if not return_state_projection:
-                return [self.polytope_to_id[best_polytope[0]]]
-            return [self.polytope_to_id[best_polytope[0]]], best_polytope, [best_distance], [state_projection]
+        # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
+        best_polytope, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True)
+        # print("len(best_polytope)", len(best_polytope)) # always 1
+        keypoints = [np.fromstring(k) for k, v in self.polytope_tree.key_point_to_zonotope_map.items() if v[0] == best_polytope]
+        # print("keypoints", keypoints) # keypoints fo the best_polytope
+
+        # Find the best keypoint: closest to query_state
+
+        # TODO: Implement this
+        def find_closest_keypoint():
+            delta=(x_vector - x_nearest).reshape(Q.n)
+            if ball=="infinity":
+                d=np.linalg.norm(delta,ord=np.inf)
+            elif ball=="l1":
+                d=np.linalg.norm(delta,ord=1)
+            elif ball=="l2":
+                d=np.linalg.norm(np.multiply(distance_scaling_array, delta),ord=2)
+            else:
+                raise NotImplementedError
+
+
+        best_polytopes_list = [self.polytope_to_id[bp] for bp in best_polytope]
+        if not return_state_projection:
+            return best_polytopes_list[:k], best_keypoints
+        return best_polytopes_list[:k], best_polytope, [best_distance], [state_projection]
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         '''
