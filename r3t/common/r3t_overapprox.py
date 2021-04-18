@@ -2,7 +2,7 @@
 RG-RRT*
 
 '''
-
+import os
 import numpy as np
 from timeit import default_timer
 from r3t.common.help import *
@@ -109,9 +109,10 @@ class OverR3TNode():
         self.complete_reachable_set = complete_reachable_set
         self.generator_list = generator_list
 
-        _reachable_set_zonotope, _last_generator_idx = self.get_last_reachable_set()
+        _reachable_set_zonotope, _last_generator_idx, _k_list = self.get_last_reachable_set()
         self.last_generator_idx = _last_generator_idx
-        self.reachable_set = compute_last_reachable_set(self.state, _reachable_set_zonotope, _last_generator_idx)
+        self.k_list = _k_list
+        self.reachable_set = compute_last_reachable_set(self.state, _reachable_set_zonotope, _last_generator_idx, _k_list)
 
 
     def __repr__(self):
@@ -149,8 +150,22 @@ class OverR3TNode():
 
     def get_last_reachable_set(self):
         ''' (New Function)
+        
+        reachable_set_zonotope: list of zonotope
+        last_generator_idx:     list (of list)
         '''
-        return self.complete_reachable_set[-1], self.generator_list[-1]
+        reachable_set_zonotope = []
+        last_generator_idx = []
+        k_list = []
+
+        for k, v in self.complete_reachable_set.items():
+            reachable_set_zonotope.append(v[-1])
+            last_generator_idx.append(self.generator_list[k][-1])
+            k_list.append(k)
+
+        # print("reachable_set_zonotope", len(reachable_set_zonotope), reachable_set_zonotope[0])
+        # print("last_generator_idx", len(last_generator_idx), last_generator_idx[0].shape) # (3, 1)
+        return reachable_set_zonotope, last_generator_idx, k_list
 
 
 class ReachableSetTree:
@@ -203,8 +218,8 @@ class OverR3T:
         :param reachable_set_tree: A StateTree object for fast querying
         :param path_class: A class handel that is used to represent path
         '''
-        # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat")
-        self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/data/frs/FRS_pendulum_theta_0_theta_dot_0_k_0.mat")
+        # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/data/frs/FRS_pendulum_theta_0_theta_dot_0_k_0.mat")
+        self.frs_dict = self.load_frs_dict(basepath='/home/yingxue/R3T_shared/r3t/data/frs')
         complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
         self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
@@ -225,26 +240,69 @@ class OverR3T:
         self.rewire_radius=rewire_radius
 
 
+    def load_frs_dict(self, basepath = '~/R3T_shared/r3t/data/frs'):
+        ''' load pre-computed forward reachable set as a dictionary
+
+        3D mesh with one parameter range and two initial condition range
+        File name example: "FRS_pendulum_theta_0_theta_dot_0_k_2"
+        key:    tuple, e.g. (1, -2, -7)
+        value:  dict, has keys "dict_keys(['__header__', '__version__', '__globals__', 'info_FRS', 'save_FRS'])"
+                we care about 'info_FRS', 'save_FRS'
+        '''
+        frs_dict = {}   
+
+        for entry in os.listdir(basepath):
+            if os.path.isfile(os.path.join(basepath, entry)):
+                mat = scipy.io.loadmat(os.path.join(basepath, entry))
+                list_of_words = entry.split('_')
+                # print("theta=",int(list_of_words[3]))
+                # print("theta_dot=",int(list_of_words[6]))
+                # print("theta_k=",int(list_of_words[8].split('.')[0]))
+
+                if abs(int(list_of_words[8].split('.')[0])) <= 4:
+                    frs_dict[(int(list_of_words[3]),int(list_of_words[6]),int(list_of_words[8].split('.')[0]))] = mat
+
+        # print(getsizeof(frs_dict))
+        # print("frs_dict", frs_dict.keys())
+        # print(frs_dict[(-2, -3, -4)].keys())
+        return frs_dict
+
+
     def compuate_reachable_set_and_generator(self, child_state):
         ''' (New Function)
-        returns the overapproximated rechable set for initial condition = given node state
+        returns the overapproximated reachable set for initial condition = given node state
+
+        generator_list:         dict, key: v[2], for k; val: list of generator for (theta0, theta_dot0, k)
+        complete_reachable_set: dict, key: v[2], for k; val: list of reachable set for (theta0, theta_dot0, k)
         '''
+        # print("child_state", child_state)
+        # print("child_state int", round(child_state[0]), round(child_state[1]))
+        # round(-2.5) -> 2, TODO: As Yifei the data
+            
+        complete_reachable_set = {}
+        generator_list = {}
 
-        complete_reachable_set = []
-        generator_list = []
+        slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
 
-        for t in range(len(self.mat['info_FRS'][0])): 
+        for k, v in self.frs_dict.items():
+            if k[0] == round(child_state[0]) and k[1] == round(child_state[1]):
+                mat = self.frs_dict[k]
 
-            generator_list.append(self.mat['info_FRS'][0][t])
+                generator_list[k[2]] = []
+                complete_reachable_set[k[2]] = []
 
-            x = self.mat['save_FRS'][0][t][:,0] #center
-            G = self.mat['save_FRS'][0][t][:,1:]
-            Z = zonotope(x,G,color='green')
+                # slice all time step by initial state
+                for t in range(len(mat['info_FRS'][0])): 
 
-            # slice it for initial state
-            slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
-            Z_slice = zonotope_slice(Z, generator_idx=self.mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
-            complete_reachable_set.append(Z_slice)
+                    generator_list[k[2]].append(mat['info_FRS'][0][t])
+
+                    x = mat['save_FRS'][0][t][:,0]  # center
+                    G = mat['save_FRS'][0][t][:,1:]
+                    Z = zonotope(x,G,color='green')
+
+                    Z_slice = zonotope_slice(Z, generator_idx=mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
+                    complete_reachable_set[k[2]].append(Z_slice)
+
         return complete_reachable_set, generator_list
 
 
@@ -380,21 +438,23 @@ class OverR3T:
                 sample_count+=1
                 # map the states to nodes
                 try:
-                    # print("running sampler 1")
-
+                    # print("TRY")
                     nearest_state_id_list, k_closest = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
+                    # print("k_closest", k_closest)
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
                     # print("nearest_state_id_list", nearest_state_id_list)
-                    # print("k_closest", k_closest)
+                    # print("nearest_node", nearest_node)
 
                     # # find the closest state in the reachable set and use it to extend the tree
                     # # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
+                    # print("running sampler 1")
                     new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
                     discard = False     # TODO: Make it True and reconsider for collision checking
                     new_state_id = hash(str(new_state))
                     # print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree
                     # if new_state_id in self.state_to_node_map or discard:
+
                     if new_state_id in self.state_to_node_map or discard:
                         # FIXME: how to prevent repeated state exploration?
                         # print('Warning: state already explored')
@@ -402,15 +462,18 @@ class OverR3T:
                         continue    # sanity check to prevent numerical errors
 
                     if not explore_deterministic_next_state:
-                        # print("running sampler 4")
+                        # print("running sampler 4") # - we are running this
                         is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
                     else:
                         # print("running sampler 5")
                         is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
                 except Exception as e:
-                    print('Caught %s' % e)
+                    print('Caught (build_tree_to_goal_state) %s' % e)
                     # print("running sampler 6")
                     is_extended = False
+
+                    exit()
+
                 if not is_extended:
                     # print('Extension failed')
                     # print("running sampler 7")

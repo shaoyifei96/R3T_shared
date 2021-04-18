@@ -9,15 +9,12 @@ from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box, \
     point_to_box_dmax, point_to_box_distance
 
 class PolytopeReachableSet(ReachableSet):
-    def __init__(self, parent_state, polytope_list, generator_idx, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
+    def __init__(self, parent_state, polytope_list, generator_idx, k_list, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
                  use_true_reachable_set=False, reachable_set_step_size=None, nonlinear_dynamic_step_size=1e-2):
         ReachableSet.__init__(self, parent_state=parent_state, path_class=PolytopePath)
         self.polytope_list = polytope_list
         self.generator_idx = generator_idx
-        try:
-            self.aabb_list = [AH_polytope_to_box(p, return_AABB=True) for p in self.polytope_list]
-        except TypeError:
-            self.aabb_list = None
+        self.k_list = k_list
         self.epsilon = epsilon
         self.deterministic_next_state = deterministic_next_state
         self.sys=sys
@@ -37,12 +34,10 @@ class PolytopeReachableSet(ReachableSet):
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
         try:
-            #multimodal
+            # multimodal
             distance = np.inf
             closest_state = None
             for i, polytope in enumerate(self.polytope_list):
-                # if point_to_box_distance(goal_state, self.aabb_list[i])>0:
-                #     continue
                 current_distance, current_closest_state = distance_point_polytope(polytope, goal_state, ball='l2')
                 if current_distance < self.epsilon:
                     if return_closest_state:
@@ -54,6 +49,7 @@ class PolytopeReachableSet(ReachableSet):
                         distance = current_distance
                         closest_state = current_closest_state
             return False, closest_state
+
         except TypeError:
 
             distance, closest_state = distance_point_polytope(self.polytope_list, goal_state, ball='l2')
@@ -86,75 +82,11 @@ class PolytopeReachableSet(ReachableSet):
                         starting_state= state)
                 state_list.append(state)
             except Exception as e:
-                print('Caught %s' %e)
+                print('Caught (find_closest_state_OverR3T) %s' %e)
                 return np.ndarray.flatten(closest_point), np.asarray([])
         # print("state_list", state_list)
         return np.ndarray.flatten(state), state_list
 
-
-    def find_closest_state(self, query_point, save_true_dynamics_path=False):
-        '''
-        Find the closest state from the query point to a given polytope
-        :param query_point:
-        :return: Tuple (closest_point, closest_point_is_self.state)
-        '''
-        ## Upper Bound method
-        distance = np.inf
-        closest_point = None
-        p_used = None
-        try:
-            #use AABB to upper bound distance
-            min_dmax = np.inf
-            for i, aabb in enumerate(self.aabb_list):
-                dmax = point_to_box_dmax(query_point, aabb)
-                if dmax < min_dmax:
-                    min_dmax = dmax
-            for i, p in enumerate(self.polytope_list):
-                #ignore polytopes that are impossible
-                if point_to_box_distance(query_point, self.aabb_list[i]) > min_dmax:
-                    continue
-                d, proj = distance_point_polytope(p, query_point, ball='l2')
-                if d<distance:
-                    distance = d
-                    closest_point = proj
-                    p_used = p
-            assert closest_point is not None
-        except TypeError:
-            closest_point = distance_point_polytope(self.polytope_list, query_point, ball='l2')[1]
-            p_used = self.polytope_list
-        if np.linalg.norm(closest_point-self.parent_state)<self.epsilon:
-            if save_true_dynamics_path:
-                return np.ndarray.flatten(closest_point), True, np.asarray([])
-            return np.ndarray.flatten(closest_point), True, np.asarray([self.parent_state, np.ndarray.flatten(closest_point)])
-        if self.use_true_reachable_set and self.reachable_set_step_size:
-            #solve for the control input that leads to this state
-            current_linsys = self.sys.get_linearization(self.parent_state) #FIXME: does mode need to be specified?
-            u = np.dot(np.linalg.pinv(current_linsys.B*self.reachable_set_step_size), \
-                       (np.ndarray.flatten(closest_point)-np.ndarray.flatten(self.parent_state)-\
-                        self.reachable_set_step_size*(np.dot(current_linsys.A, self.parent_state)+\
-                                                                                      np.ndarray.flatten(current_linsys.c))))
-            u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
-            #simulate nonlinear forward dynamics
-            state = self.parent_state
-            state_list = [self.parent_state]
-            for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
-                try:
-                    state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
-                         starting_state= state)
-                    state_list.append(state)
-                except Exception as e:
-                    print('Caught %s' %e)
-                    return np.ndarray.flatten(closest_point), True, np.asarray([])
-                # print step,state
-            # print(state, closest_point)
-            if save_true_dynamics_path:
-                if len(state_list)<=3:
-                    print('Warning: short true dynamics path')
-                return np.ndarray.flatten(state), False, np.asarray(state_list)
-            else:
-                return np.ndarray.flatten(state), False, np.asarray([self.parent_state, np.ndarray.flatten(state)])
-        else:
-            return np.ndarray.flatten(closest_point), False, np.asarray([self.parent_state, np.ndarray.flatten(closest_point)])
 
     def plan_collision_free_path_in_set(self, goal_state, return_deterministic_next_state = False):
         try:
@@ -201,29 +133,44 @@ class PolytopeReachableSetTree(ReachableSetTree):
     def insert(self, state_id, reachable_set):
         try:
             iter(reachable_set.polytope_list)
+            # print("PolytopeReachableSetTree - insert 1 ")
             if self.polytope_tree is None:
+                # print("PolytopeReachableSetTree - insert 2 ")
+
                 self.polytope_tree = PolytopeTree(np.array(reachable_set.polytope_list),
                                                   reachable_set.generator_idx,
+                                                  reachable_set.k_list,
                                                   key_vertex_count=self.key_vertex_count,
                                                   distance_scaling_array=self.distance_scaling_array)
-                # for d_neighbor_ids
-                # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
+                # print("PolytopeReachableSetTree - insert 3 ")
+
             else:
-                self.polytope_tree.insert(np.array(reachable_set.polytope_list))
+                # print("PolytopeReachableSetTree - insert 4 ")
+
+                self.polytope_tree.insert(np.array(reachable_set.polytope_list), reachable_set.generator_idx, reachable_set.k_list)
+                # print("PolytopeReachableSetTree - insert 5 ")
+
             self.id_to_reachable_sets[state_id] = reachable_set
+            # print("PolytopeReachableSetTree - insert 6 ")
+
             for p in reachable_set.polytope_list:
+                # print("PolytopeReachableSetTree - insert 7 ")
                 self.polytope_to_id[p] = state_id
 
-        except TypeError:
-            # It should go here because we have a zonotope
+        # except TypeError:
+        except Exception as e:
+            print('Caught (PolytopeReachableSetTree) %s' %e)
+            exit()
+
+            # It should NOT go here because we have a zonotope list
             # print("Convex hull, reachable_set.polytope_list is just an AH polytope")
             if self.polytope_tree is None:
-                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), reachable_set.generator_idx, key_vertex_count=self.key_vertex_count,
+                self.polytope_tree = PolytopeTree(np.atleast_1d([reachable_set.polytope_list]).flatten(), reachable_set.generator_idx, reachable_set.k_list, key_vertex_count=self.key_vertex_count,
                                                   distance_scaling_array=self.distance_scaling_array)
                 # for d_neighbor_ids
                 # self.state_tree_p.dimension = to_AH_polytope(reachable_set.polytope[0]).t.shape[0]
             else:
-                self.polytope_tree.insert(np.array([reachable_set.polytope_list]), reachable_set.generator_idx)
+                self.polytope_tree.insert(np.array([reachable_set.polytope_list]), reachable_set.generator_idx, reachable_set.k_list)
             self.id_to_reachable_sets[state_id] = reachable_set
             self.polytope_to_id[reachable_set.polytope_list] = state_id
         # for d_neighbor_ids
@@ -238,9 +185,13 @@ class PolytopeReachableSetTree(ReachableSetTree):
             return None
         # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
         best_polytope, k_closest, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True, ball='l2')
+        
         # print("len(best_polytope)", len(best_polytope)) # always 1
 
         best_polytopes_list = [self.polytope_to_id[bp] for bp in best_polytope]
+
+        # print("best_polytopes_list", len(best_polytopes_list))
+
         if not return_state_projection:
             return best_polytopes_list[:k], k_closest
         return best_polytopes_list[:k], k_closest, best_polytope, [best_distance], [state_projection]
@@ -301,7 +252,7 @@ class SymbolicSystem_OverR3T(OverR3T):
         self.contains_goal_function = contains_goal_function
         self.goal_tolerance = goal_tolerance
         if compute_last_reachable_set is None:
-            def compute_last_reachable_set(state, reachable_set_polytope, generator_idx):
+            def compute_last_reachable_set(state, reachable_set_polytope, generator_idx, k_list):
                 '''
                 Compute polytopic reachable set using the system - for last time index
                 :param h:
@@ -318,7 +269,7 @@ class SymbolicSystem_OverR3T(OverR3T):
                 #             deterministic_next_state.append(state)
                 #     else:
                 #         deterministic_next_state = [state, self.sys.forward_step(starting_state=state, modify_system=False, return_as_env=False, step_size=self.step_size)]
-                return PolytopeReachableSet(state, reachable_set_polytope, generator_idx, sys=self.sys, contains_goal_function=self.contains_goal_function, \
+                return PolytopeReachableSet(state, reachable_set_polytope, generator_idx, k_list, sys=self.sys, contains_goal_function=self.contains_goal_function, \
                                             deterministic_next_state=deterministic_next_state, reachable_set_step_size=self.step_size, use_true_reachable_set=use_true_reachable_set,\
                                             nonlinear_dynamic_step_size=nonlinear_dynamic_step_size)
         OverR3T.__init__(self, self.sys.get_current_state(), compute_last_reachable_set, sampler, PolytopeReachableSetTree, SymbolicSystem_StateTree, PolytopePath)

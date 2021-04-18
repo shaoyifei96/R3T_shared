@@ -6,74 +6,35 @@ from pypolycontain.utils.random_polytope_generator import get_k_random_edge_poin
 from pypolycontain.lib.operations import to_AH_polytope
 from r3t.common.help import *
 
-def build_key_point_kd_tree(polytopes, key_vertex_count = 0, distance_scaling_array=None):
-    if key_vertex_count > 0:
-        n = len(polytopes)*(1+2**key_vertex_count)
-    else:
-        n = len(polytopes)
-    if polytopes[0].__name__=='AH_polytope':
-        dim = polytopes[0].t.shape[0]
-    elif polytopes[0].__name__=='zonotope':
-        dim = polytopes[0].x.shape[0]
-    else:
-        raise NotImplementedError
-    key_point_to_zonotope_map = dict()
-    scaled_key_points = np.zeros((n,dim))
-    if distance_scaling_array is None:
-        distance_scaling_array = np.ones(n)
-    for i, p in enumerate(polytopes):
-        if p.__name__=='AH_polytope' and key_vertex_count==0:
-            scaled_key_points[i,:] = np.multiply(distance_scaling_array, p.t[:, 0], dtype='float')
-            key_point_to_zonotope_map[str(p.t[:, 0])]=[p]
-        elif p.__name__ == 'zonotope' and key_vertex_count==0:
-            scaled_key_points[i,:] = np.multiply(distance_scaling_array, p.x[:, 0], dtype='float')
-            key_point_to_zonotope_map[str(p.x[:, 0])]=[p]
-        elif p.__name__=='zonotope':
-            scaled_key_points[i*(1+2**key_vertex_count),:] = np.multiply(distance_scaling_array, p.x[:, 0], dtype='float')
-            key_point_to_zonotope_map[str(p.x[:, 0])]=[p]
-            other_key_points = get_k_random_edge_points_in_zonotope(p, key_vertex_count)
-            scaled_other_key_points = np.multiply(distance_scaling_array, other_key_points, dtype='float')
-            scaled_key_points[i * (2 ** key_vertex_count + 1) + 1:(i + 1) * (2 ** key_vertex_count + 1),
-            :] = scaled_other_key_points
-            for kp in other_key_points:
-                key_point_to_zonotope_map[str(kp)] = [p]
-        else:
-            raise NotImplementedError
-    return KDTree(scaled_key_points), key_point_to_zonotope_map
 
-
-def build_key_point_kd_tree_OverR3T(polytopes, generator_idx_list, key_vertex_count = 0, distance_scaling_array=None):
+def build_key_point_kd_tree_OverR3T(polytopes, generator_idx_list, k_lists, key_vertex_count = 0, distance_scaling_array=None):
 
     assert polytopes[0].__name__=='zonotope', "Not a Zonotope!"
     p0_projected = project_zonotope(polytopes[0], dim=[0, 1], mode='full')
     dim = p0_projected.x.shape[0]
     key_point_to_zonotope_map = dict()
-    scaled_key_points = np.zeros((len(polytopes)*(key_vertex_count+1),dim))
+    scaled_key_points = np.zeros((len(polytopes)*key_vertex_count,dim))
     if distance_scaling_array is None:
         distance_scaling_array = np.ones(n)
         
-    for i, p in enumerate(polytopes):
-        assert p.__name__=='zonotope', "Not Zonotope in kd Tree!"
-        if p.__name__=='AH_polytope' and key_vertex_count==0:
-            scaled_key_points[i,:] = np.multiply(distance_scaling_array, p.t[:, 0], dtype='float')
-            key_point_to_zonotope_map[p.t[:, 0].tostring()]=[p]
-        elif p.__name__ == 'zonotope' and key_vertex_count==0:
-            p_projected = project_zonotope(p, dim=[0, 1], mode='full')
-            scaled_key_points[i,:] = np.multiply(distance_scaling_array, p_projected.x[:, 0], dtype='float')
-            key_point_to_zonotope_map[p_projected.x[:, 0].tostring()]=[p]
-        elif p.__name__=='zonotope':
-            p_projected = project_zonotope(p, dim=[0, 1], mode='full')
-            scaled_key_points[i*(1+key_vertex_count),:] = np.multiply(distance_scaling_array, p_projected.x[:, 0], dtype='float')
-            key_point_to_zonotope_map[p_projected.x[:, 0].tostring()]=[p]
+    p_idx = 0
+    for i, k_list in enumerate(k_lists):
+        for j, k in enumerate(k_list):
+            p = polytopes[p_idx]
+            # p_projected = project_zonotope(p, dim=[0, 1], mode='full')
+            # scaled_key_points[p_idx*(1+key_vertex_count),:] = np.multiply(distance_scaling_array, p_projected.x[:, 0], dtype='float')
+            # key_point_to_zonotope_map[p_projected.x[:, 0].tostring()]=[[p], k]
             # slice by k
-            other_key_points, k_lists = get_k_random_edge_points_in_zonotope_OverR3T(p, generator_idx_list[i], N=key_vertex_count, k0=[-0.5], kf=[0.5]) # key_vertex_count: number of keypoints for zonotope
-            # other_key_points = get_k_random_edge_points_in_zonotope(p, generator_idx_list[i], key_vertex_count) # key_vertex_count: number of keypoints for zonotope
-            scaled_other_key_points = np.multiply(other_key_points,distance_scaling_array, dtype='float')
-            scaled_key_points[i*(1+key_vertex_count)+1:(i+1)*(1+key_vertex_count), :] = scaled_other_key_points
+            # key_vertex_count: number of keypoints for zonotope
+            other_key_points, keypoint_k_lists = get_k_random_edge_points_in_zonotope_OverR3T(p, generator_idx_list[i][j], N=key_vertex_count, k=k, lk=-0.5, uk=0.5) 
+            scaled_other_key_points = np.multiply(other_key_points, distance_scaling_array, dtype='float')
+            scaled_key_points[p_idx*key_vertex_count:(p_idx+1)*key_vertex_count, :] = scaled_other_key_points
+
             for j, kp in enumerate(other_key_points):
-                key_point_to_zonotope_map[kp.tostring()] = [[p], k_lists[j]]
-        else:
-            raise NotImplementedError
+                key_point_to_zonotope_map[kp.tostring()] = [[p], keypoint_k_lists[j]]
+
+            p_idx += 1
+
     return KDTree(scaled_key_points), key_point_to_zonotope_map
 
 

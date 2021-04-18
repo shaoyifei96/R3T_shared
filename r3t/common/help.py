@@ -84,13 +84,21 @@ def convert_obs_to_zonotope(c,theta_len,theta_dot_length):
     return zonotope(newc, newG, color="red")
 
 def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
+    '''
+    Check complete_reachable_set(), get list of reachable sets for each t using k from the dict
+    '''
+
     print(zono_list, gen_idx_list,k, state_initial,Z_obs_list)
-    for zono_idx in reversed(range(len(zono_list))):#check last one first, largest, more likely to intersect with things
+
+    # check last one first, largest, more likely to intersect with things
+    for zono_idx in reversed(range(len(zono_list))):
         # print(zono_list[zono_idx],gen_idx_list[zono_idx],np.append(state_initial,k))
+
         zono = zonotope_slice(zono_list[zono_idx],gen_idx_list[zono_idx],slice_value=np.append(state_initial,k))
         for Z_obs in Z_obs_list:
             if check_zono_contain(zono, Z_obs):
                 return True
+
     return False
 
 

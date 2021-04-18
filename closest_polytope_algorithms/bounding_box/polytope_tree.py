@@ -11,12 +11,14 @@ from rtree import index
 from r3t.common.help import *
 
 class PolytopeTree:
-    def __init__(self, polytopes, generator_idx, key_vertex_count = 0, distance_scaling_array = None):
+    def __init__(self, polytopes, generator_idx, k_list, key_vertex_count = 0, distance_scaling_array = None):
         '''
         Updated implementation using rtree
         :param polytopes:
         '''
-        self.polytopes = polytopes  # Zonotope lists
+        self.polytopes = polytopes  # Zonotope list of list
+        self.k_lists = []
+        self.k_lists.append(k_list)
         self.generator_idx_list = []
         self.generator_idx_list.append(generator_idx)
         self.key_vertex_count = key_vertex_count
@@ -37,8 +39,8 @@ class PolytopeTree:
             distance_scaling_array = np.ones(self.rtree_p.dimension)
         self.distance_scaling_array = distance_scaling_array
         self.repeated_scaling_matrix = np.tile(self.distance_scaling_array, 2)
-        for i, z in enumerate(self.polytopes):
 
+        for i, z in enumerate(self.polytopes):
             z_projected = project_zonotope(z, dim=[0, 1], mode='full')
             lu = np.multiply(self.repeated_scaling_matrix, AH_polytope_to_box(to_AH_polytope(z_projected)))
             # assert(hash(z) not in self.index_to_polytope_map)
@@ -49,16 +51,20 @@ class PolytopeTree:
 
         # build key point tree for query box size guess
         # self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree(self.polytopes, self.key_vertex_count, self.distance_scaling_array)
-        self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.key_vertex_count, self.distance_scaling_array)
+        self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.k_lists, self.key_vertex_count, self.distance_scaling_array)
 
-    def insert(self, new_polytopes, new_generator_idx):
+    def insert(self, new_polytopes, new_generator_idx, new_k_list):
         '''
         Inserts a new polytope to the tree structure
         :param new_polytope:
         :return:
         '''
         # insert into rtree
+        # print("new_polytopes", new_polytopes)
         for new_polytope in new_polytopes:
+            # print("new_polytope", type(new_polytope))
+            # print("new_polytope", new_polytope)
+
             assert new_polytope.type == 'zonotope'
             if new_polytope.type == 'zonotope':
                 new_polytope_projected = project_zonotope(new_polytope, dim=[0, 1], mode='full')
@@ -72,18 +78,22 @@ class PolytopeTree:
 
             self.idx.insert(hash(new_polytope), np.multiply(self.repeated_scaling_matrix, lu))
 
-
             # assert (hash(new_polytope) not in self.index_to_polytope_map)
             self.index_to_polytope_map[hash(new_polytope)] = new_polytope
+
         if isinstance(self.polytopes, np.ndarray):
-            self.polytopes = np.concatenate((self.polytopes,np.array(new_polytopes)))
+            self.polytopes = np.concatenate((self.polytopes, np.array(new_polytopes)))
         else:
             self.polytopes.append(new_polytope)
+
+        self.k_lists.append(new_k_list)
         self.generator_idx_list.append(new_generator_idx)
+
         # insert into kdtree
         # FIXME: Rebuilding a kDtree should not be necessary
         # self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree(self.polytopes, self.key_vertex_count, self.distance_scaling_array)
-        self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.key_vertex_count, self.distance_scaling_array)
+        self.scaled_key_point_tree, self.key_point_to_zonotope_map = build_key_point_kd_tree_OverR3T(self.polytopes, self.generator_idx_list, self.k_lists, self.key_vertex_count, self.distance_scaling_array)
+
 
     def find_closest_polytopes(self, original_query_point, return_intermediate_info=False, return_state_projection=False, may_return_multiple=False, ball="infinity"):
 
@@ -98,16 +108,28 @@ class PolytopeTree:
         #     query_point=query_point.reshape((-1,1))
         # Construct centroid box
         scaled_query_point = np.multiply(self.distance_scaling_array, original_query_point.flatten())
+
+        # print("scaled_query_point", scaled_query_point)
+
         _x, ind = self.scaled_key_point_tree.query(np.ndarray.flatten(scaled_query_point))
 
         scaled_closest_centroid = self.scaled_key_point_tree.data[ind]
         #Use dist(polytope, query) as upper bound
         evaluated_zonotopes = []
-        centroid_zonotopes, k_zonotopes = self.key_point_to_zonotope_map[np.divide(scaled_closest_centroid, self.distance_scaling_array).tostring()]
+
+        try:
+            centroid_zonotopes, k_zonotopes = self.key_point_to_zonotope_map[np.divide(scaled_closest_centroid, self.distance_scaling_array).tostring()]
+        except:
+            print("np.divide(scaled_closest_centroid, self.distance_scaling_array)", np.divide(scaled_closest_centroid, self.distance_scaling_array))
+            print("np.divide(scaled_closest_centroid, self.distance_scaling_array)", self.key_point_to_zonotope_map[np.divide(scaled_closest_centroid, self.distance_scaling_array).tostring()])
+
+            assert False
+            exit()
 
         # print("self.key_point_to_zonotope_map", self.key_point_to_zonotope_map)
         # print("string", str(np.divide(scaled_closest_centroid, self.distance_scaling_array)))
         # print("k_zonotopes", k_zonotopes)
+
         # print("centroid_zonotopes", centroid_zonotopes)
 
         polytope_state_projection = {}
@@ -140,6 +162,9 @@ class PolytopeTree:
         #create query box
         #find candidate box nodes
         candidate_ids = list(self.idx.intersection(scaled_heuristic_box_lu))
+
+        # print("candidate_ids", candidate_ids)
+
         # print('Evaluating %d zonotopes') %len(candidate_boxes)
         #map back to zonotopes
         if len(candidate_ids)==0:
@@ -211,11 +236,21 @@ class PolytopeTree:
          
 
             # print("find_closest_keypoints")
-            keypoints = np.array([np.fromstring(k) for k, v in self.key_point_to_zonotope_map.items() if v[0] == list(best_polytope)])
-            # print("keypoints", keypoints)
+            try:
+                keypoints = np.array([np.fromstring(k) for k, v in self.key_point_to_zonotope_map.items() if v[0] == [list(best_polytope)[0]]])
+                # print("keypoints", keypoints)
+            except:
+                print("keypoints", keypoints)
 
             # Find the best keypoint: closest to query_state
-            delta = keypoints - original_query_point
+            try:
+                delta = keypoints - original_query_point
+            except:
+                print("best_polytope", best_polytope)
+                print("original_query_point", original_query_point)
+                print("keypoints", keypoints)
+                # print("delta", delta)
+
 
             if ball=="infinity":
                 d=np.linalg.norm(delta,ord=np.inf, axis=1)
@@ -225,11 +260,20 @@ class PolytopeTree:
                 d=np.linalg.norm(np.multiply(self.distance_scaling_array, delta), ord=2, axis=1)
             else:
                 raise NotImplementedError
-
+            
             closest_keypoint = keypoints[np.argmin(d), :]
-            _, k_closest = self.key_point_to_zonotope_map[closest_keypoint.tostring()]
-            # print("k_closest", k_closest[0])
-            # print("find_closest_keypoints - END")
+            # print("closest_keypoint", closest_keypoint)
+
+            try:
+                _, k_closest = self.key_point_to_zonotope_map[closest_keypoint.tostring()]
+            except:
+                print()
+                print("k_closest", k_closest[0])
+                print("find_closest_keypoints - END")
+                print("closest_keypoint", closest_keypoint)
+                print("self.key_point_to_zonotope_map[closest_keypoint.tostring()]", self.key_point_to_zonotope_map[closest_keypoint.tostring()])
+                print()
+
 
             if return_intermediate_info:
                 return np.atleast_1d(list(best_polytope)[0]), k_closest[0], best_scaled_distance, evaluated_zonotopes, heuristic_box_lu

@@ -21,6 +21,8 @@ import r3t.common as common
 try:
     from pypolycontain.lib.operations import AH_polytope_vertices
     from pypolycontain.lib.objects import AH_polytope
+    from pypolycontain.lib.operations import to_AH_polytope
+    from pypolycontain.lib.operations import convex_hull_of_point_and_polytope
 except:
     warnings.warn("You don't have pypolycontain properly installed. Can not execute 'import pypyplycontain'")
 
@@ -155,25 +157,170 @@ def visualize_3D_zonotopes(list_of_zonotopes,a=1.5,list_of_dimensions=None):
     ax.add_collection3d(p)
     ax.grid3d(color=(0,0,0), linestyle='--', linewidth=0.3)
 
-def visualize_2D_AH_polytope(list_of_AH_polytopes,a=1.5,color=None,alpha=0.5,fig=None,ax=None,axis_limit=[0],title=r"AH-Polytopes",N=20,epsilon=0.001):
+
+# def visualize_2D_AH_polytope_nonlinear(rrt, states=None, a=1.5,color=None,alpha=0.5,fig=None,ax=None,axis_limit=[0],title=r"AH-Polytopes",N=20,epsilon=0.001, dims=[0,1]):
+    
+#     node_queue = deque([rrt.root_node])
+#     complete_reachable_sets = []
+#     v_all=np.empty((0,2))
+
+#     i = 0
+#     while node_queue:
+#         i+=1
+#         node = node_queue.popleft()
+        
+#         k_lists = np.arange(-1, 2, 1)
+#         for k, v in node.complete_reachable_set.items():
+#             if k not in k_lists:
+#                 continue
+
+
+#             # for i in np.arange(0, len(node.complete_reachable_set), 6): for time
+            
+
+
+
+#         # Q_polytope = to_AH_polytope(Q_projected)
+#         v,w=AH_polytope_vertices(Q_polytope,N=N,epsilon=epsilon)
+
+#         # Minkowski sum with epsilon ball
+#         try:
+#             v=v[ConvexHull(v).vertices,:]
+#         except:
+#             warnings.warn(str(Q)+": was degenerate or very thin to plot. Adding a tube of"+str(epsilon)+"N:"+str(v.shape))
+#             v=w[ConvexHull(w).vertices,:]
+#         v_all=np.vstack((v_all,v))
+#         p=Polygon(v)
+#         p_list.append(p)
+#         new_list_of_AH_polytopes.append(Q)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#         # handle indexing
+#         if dims:
+#             state = np.ndarray.flatten(node.state)[dims]
+#         else:
+#             state = np.ndarray.flatten(node.state)
+
+
+#         #handle goal
+#         if goal_override is not None and node==rrt.goal_node:
+#             lines.append([state, goal_override])
+#         elif node == rrt.root_node or node==rrt.goal_node:
+#             pass
+#         else:
+#             for i in range(len(node.true_dynamics_path)-1):
+#                 # handle indexing
+#                 if dims:
+#                     lines.append([np.ndarray.flatten(node.true_dynamics_path[i])[dims],
+#                                    np.ndarray.flatten(node.true_dynamics_path[i + 1])[dims]])
+#                 else:
+#                     lines.append([np.ndarray.flatten(node.true_dynamics_path[i]),
+#                                   np.ndarray.flatten(node.true_dynamics_path[i + 1])])
+
+#         if node.children is not None:
+#             # print(len(node.children))
+#             node_queue.extend(list(node.children))
+
+
+
+
+
+
+
+#     p_list=[]
+#     v_all=np.empty((0,2))
+#     new_list_of_AH_polytopes = []
+
+#     for i, Q_list in enumerate(list_of_AH_polytopes):
+
+#         plot_idx = [int(len(Q_list) // 2)-1, int(len(Q_list) // 2), int(len(Q_list) // 2)+1]
+
+#         for j, Q in enumerate(Q_list):
+#             if j in plot_idx:
+#                 assert Q.type == 'zonotope'
+#                 Q_projected = common.help.project_zonotope(Q, dim=[0, 1], mode ='full')
+
+#                 Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
+#                 # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
+                
+#                 # Q_polytope = to_AH_polytope(Q_projected)
+#                 v,w=AH_polytope_vertices(Q_polytope,N=N,epsilon=epsilon)
+
+#                 # Minkowski sum with epsilon ball
+#                 try:
+#                     v=v[ConvexHull(v).vertices,:]
+#                 except:
+#                     warnings.warn(str(Q)+": was degenerate or very thin to plot. Adding a tube of"+str(epsilon)+"N:"+str(v.shape))
+#                     v=w[ConvexHull(w).vertices,:]
+#                 v_all=np.vstack((v_all,v))
+#                 p=Polygon(v)
+#                 p_list.append(p)
+#                 new_list_of_AH_polytopes.append(Q)
+
+#     if color is None:
+#         p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=alpha)
+#     else:
+#         p_patch = PatchCollection(p_list, color=color,alpha=alpha)
+# #    p_patch = PatchCollection(p_list, color=[(1-zono.x[0,0]>=1,0,zono.x[0,0]>=1) \
+# #        for zono in list_of_zonotopes],alpha=0.75)
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots()
+#     ax.add_collection(p_patch)
+# #    print(axis_limit)
+#     if len(axis_limit)==1:
+#         ax.set_xlim([np.min(v_all[:,0])-a,a+np.max(v_all[:,0])])
+#         ax.set_ylim([np.min(v_all[:,1])-a,a+np.max(v_all[:,1])])
+#     else:
+#         ax.set_xlim([axis_limit[0],axis_limit[1]])
+#         ax.set_ylim([axis_limit[2],axis_limit[3]])
+#     ax.grid(color=(0,0,0), linestyle='--', linewidth=0.3)
+#     ax.set_title(title)
+#     return fig,ax
+
+
+def visualize_2D_AH_polytope(list_of_AH_polytopes,states=None, a=1.5,color=None,alpha=0.5,fig=None,ax=None,axis_limit=[0],title=r"AH-Polytopes",N=20,epsilon=0.001):
     p_list=[]
     v_all=np.empty((0,2))
-    for Q in list_of_AH_polytopes:
-        assert Q.type == 'zonotope'
-        Q_projected = common.help.project_zonotope(Q, dim=[0, 1], mode ='full')
-        v,w=AH_polytope_vertices(Q_projected,N=N,epsilon=epsilon)
+    new_list_of_AH_polytopes = []
+    for i, Q_list in enumerate(list_of_AH_polytopes):
 
-        # Minkowski sum with epsilon ball
-        try:
-            v=v[ConvexHull(v).vertices,:]
-        except:
-            warnings.warn(str(Q)+": was degenerate or very thin to plot. Adding a tube of"+str(epsilon)+"N:"+str(v.shape))
-            v=w[ConvexHull(w).vertices,:]
-        v_all=np.vstack((v_all,v))
-        p=Polygon(v)
-        p_list.append(p)
+        plot_idx = [int(len(Q_list) // 2)-1, int(len(Q_list) // 2), int(len(Q_list) // 2)+1]
+
+        for j, Q in enumerate(Q_list):
+            if j in plot_idx:
+                assert Q.type == 'zonotope'
+                Q_projected = common.help.project_zonotope(Q, dim=[0, 1], mode ='full')
+
+                # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
+                # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
+                
+                Q_polytope = to_AH_polytope(Q_projected)
+                v,w=AH_polytope_vertices(Q_polytope,N=N,epsilon=epsilon)
+
+                # Minkowski sum with epsilon ball
+                try:
+                    v=v[ConvexHull(v).vertices,:]
+                except:
+                    warnings.warn(str(Q)+": was degenerate or very thin to plot. Adding a tube of"+str(epsilon)+"N:"+str(v.shape))
+                    v=w[ConvexHull(w).vertices,:]
+                v_all=np.vstack((v_all,v))
+                p=Polygon(v)
+                p_list.append(p)
+                new_list_of_AH_polytopes.append(Q)
+
     if color is None:
-        p_patch = PatchCollection(p_list, color=[Z.color for Z in list_of_AH_polytopes],alpha=alpha)
+        p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=alpha)
     else:
         p_patch = PatchCollection(p_list, color=color,alpha=alpha)
 #    p_patch = PatchCollection(p_list, color=[(1-zono.x[0,0]>=1,0,zono.x[0,0]>=1) \

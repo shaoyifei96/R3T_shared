@@ -88,12 +88,22 @@ def test_pendulum_planning():
 
     duration = 0
     # os.makedirs('R3T_Pendulum_'+experiment_name)
-    allocated_time = 2.0# 0.1
+    allocated_time = 10.0 # 0.1
 
 
-    VISUALIZE = False
+    VISUALIZE = True
+    PLOT_LINEAR_RS = True
+
+    iter_count = 0
 
     while(1):
+        print("iter_count: ", iter_count)
+        iter_count += 1
+        if iter_count % 10 == 0:
+            VISUALIZE = True
+        else:
+            VISUALIZE = True
+
         start_time = time.time()
         if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
             found_goal = True
@@ -103,7 +113,10 @@ def test_pendulum_planning():
         reachable_polytopes = []
         explored_states = []
         for prs in polytope_reachable_sets:
-            reachable_polytopes.append(prs.polytope_list)
+            if PLOT_LINEAR_RS:
+                reachable_polytopes.append(prs.polytope_list)
+            else:
+                pass
             explored_states.append(prs.parent_state)
         # print(explored_states)
         # print(len(explored_states))
@@ -115,12 +128,15 @@ def test_pendulum_planning():
                 goal_override = np.asarray([np.pi,0.0])
             else:
                 goal_override = np.asarray([-np.pi, 0.0])
+            VISUALIZE = True
+
+        print("Number of Nodes in the tree: ", rrt.node_tally)
 
         if VISUALIZE:
             # Plot state tree
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
+            fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=2, linewidths=0.5, show_path_to_goal=found_goal, goal_override=goal_override)
             # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
             # for explored_state in explored_states:
             #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
@@ -149,7 +165,13 @@ def test_pendulum_planning():
             # FIXME: Handle degenerated reachable set
             # fig = plt.figure()
             # ax = fig.add_subplot(111)
-            fig, ax = visualize_2D_AH_polytope(reachable_polytopes, fig=fig, ax=ax,N=200,epsilon=0.01, alpha=0.1)
+
+
+             
+            # fig, ax = visualize_2D_AH_polytope_complete(rrt)
+
+
+            fig, ax = visualize_2D_AH_polytope(reachable_polytopes, states=explored_states, fig=fig, ax=ax,N=200,epsilon=0.01, alpha=0.1)
 
             ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
             ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)

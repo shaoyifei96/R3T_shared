@@ -85,9 +85,11 @@ def get_k_random_edge_points_in_zonotope(zonotope, k, metric='l2'):
         raise NotImplementedError
 
 
-def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k0=[-0.5], kf=[0.5], metric='l2'):
+def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k=1, lk=-0.5, uk=0.5, metric='l2'):
     ''' slice it for a particular parametere value and then find end point of zonotope.
     keypoints are center of the zonotopes.
+
+    use k_list_idx to find zonotope and slice
 
     @ params:
     ---
@@ -100,6 +102,8 @@ def get_k_random_edge_points_in_zonotope_OverR3T(zonotope, generator_idx, N=5, k
     keypoints = []
     slice_dim=[4]
 
+    k0 = [k + lk]
+    kf = [k + uk]
     ki_list = np.linspace(k0, kf, N)
     # print(ki_list)
     slice_lists = np.vstack(np.meshgrid(*ki_list.T)).reshape(len(k0),-1).T

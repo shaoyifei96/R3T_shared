@@ -42,15 +42,17 @@ import os
 
 #     return zonotope(newc,newG,color="red")
 # entries = os.listdir('/home/simon/Documents/MP_backup/motion_planning_598/frs_files/')
-basepath = '/home/simon/Documents/MP_backup/motion_planning_598/frs_files/'
+# basepath = '/home/simon/Documents/MP_backup/motion_planning_598/frs_files/'
+basepath = '/home/yingxue/R3T_shared/r3t/data/frs'
+
 frs_dict = {}#FRS_pendulum_theta_0_theta_dot_0_k_2
 for entry in os.listdir(basepath):
     if os.path.isfile(os.path.join(basepath, entry)):
         mat = scipy.io.loadmat(os.path.join(basepath, entry))
         list_of_words = entry.split('_')
-        print("theta=",int(list_of_words[3]))
-        print("theta_dot=",int(list_of_words[6]))
-        print("theta_k=",int(list_of_words[8].split('.')[0]))
+        # print("theta=",int(list_of_words[3]))
+        # print("theta_dot=",int(list_of_words[6]))
+        # print("theta_k=",int(list_of_words[8].split('.')[0]))
         frs_dict[(int(list_of_words[3]),int(list_of_words[6]),int(list_of_words[8].split('.')[0]))] = mat
         # start = entry.index("_theta_")
         # end   = entry.index("_theta_dot_")
