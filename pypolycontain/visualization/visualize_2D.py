@@ -295,24 +295,23 @@ def visualize_2D_AH_polytope_nonlinear(rrt, states=None, a=1.5,color=None,alpha=
     return fig,ax
 
 
-def visualize_2D_AH_polytope(list_of_AH_polytopes,states=None, a=1.5,color=None,alpha=0.5,fig=None,ax=None,axis_limit=[0],title=r"AH-Polytopes",N=20,epsilon=0.001):
+def visualize_2D_AH_polytope(list_of_AH_polytopes, states=None, a=1.5,color=None,alpha=0.5,fig=None,ax=None,axis_limit=[0],title=r"AH-Polytopes",N=20,epsilon=0.001):
     p_list=[]
     v_all=np.empty((0,2))
     new_list_of_AH_polytopes = []
     for i, Q_list in enumerate(list_of_AH_polytopes):
 
-        print("Q_list in Plotting", Q_list)
-
-        plot_idx = [int(len(Q_list) // 2)-1, int(len(Q_list) // 2), int(len(Q_list) // 2)+1]
+        # print("Q_list in Plotting", Q_list)
+        # plot_idx = [int(len(Q_list) // 2)-1, int(len(Q_list) // 2), int(len(Q_list) // 2)+1]
 
         for j, Q in enumerate(Q_list):
-            if 1:#j in plot_idx:
+            if 1:   #j in plot_idx:
                 assert Q.type == 'zonotope'
                 Q_projected = common.help.project_zonotope(Q, dim=[0, 1], mode ='full')
 
                 # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
 
-                print("Centers: ", Q_projected.x)
+                # print("Centers: ", Q_projected.x)
 
                 # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
                 

@@ -11,19 +11,23 @@ import time
 from datetime import datetime
 import os
 import scipy.io
+from r3t.common.help import *
+
 
 matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
 
 reachable_set_epsilon = 2
 goal_tolerance = 5e-2
-input_limit = 1
+input_limit = 200
 input_samples = 9
+
+
 
 def test_pendulum_planning():
     initial_state = np.zeros(2)
 
-    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.8, b=0.1)
+    pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.81, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
     step_size = 0.3     #0.1 # 0.075
@@ -55,31 +59,116 @@ def test_pendulum_planning():
         return rnd
 
     def contains_goal_function(reachable_set, goal_state):
-        distance=np.inf
-        if np.linalg.norm(reachable_set.parent_state-goal_state)<2:
-            distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state)
-        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<2:
-            distance, projection = distance_point_polytope(reachable_set.polytope_list, goal_state_2)
-        else:
-            return False, None
-        if distance > reachable_set_epsilon:
-            return False, None
-        #enumerate inputs
-        potential_inputs = np.linspace(pendulum_system.input_limits[0,0], pendulum_system.input_limits[1,0], input_samples)
-        for u_i in potential_inputs:
-            state_list = []
-            state=reachable_set.parent_state
-            for step in range(int(step_size/nonlinear_dynamic_step_size)):
-                state = pendulum_system.forward_step(u=np.atleast_1d(u_i), linearlize=False, modify_system=False, step_size = nonlinear_dynamic_step_size, return_as_env = False,
-                     starting_state= state)
-                state_list.append(state)
-                if np.linalg.norm(goal_state-state)<goal_tolerance:
-                    print('Goal error is %d' % np.linalg.norm(goal_state-state))
-                    return True, np.asarray(state_list)
-                if np.linalg.norm(goal_state_2-state)<goal_tolerance:
-                    print('Goal error is %d' % np.linalg.norm(goal_state_2-state))
-                    return True, np.asarray(state_list)
+
         return False, None
+
+        print("reachable_set.polytope_list", reachable_set.polytope_list)
+
+        # distance=np.inf
+        # distance1 = 100
+        # distance2 = 100
+        # if np.linalg.norm(reachable_set.parent_state-goal_state)<2:
+        #     for P in reachable_set.polytope_list:
+        #         P_projected = project_zonotope(P, dim=[0, 1], mode='full')
+        #         distance, projection = distance_point_polytope(P_projected, goal_state)
+
+        #         distance1 = min(distance1, distance)
+        # elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<2:
+        #     for P in reachable_set.polytope_list:
+        #         P_projected = project_zonotope(P, dim=[0, 1], mode='full')
+        #         distance, projection = distance_point_polytope(P_projected, goal_state_2)
+        #         distance2 = min(distance2, distance)
+        # else:
+        #     return False, None
+
+        # if min(distance1, distance2) > reachable_set_epsilon:
+        #     return False, None
+
+        # if distance1 < distance2:
+        #     goal = goal_state
+        # else:
+        #     goal = goal_state_2
+
+        # slice polyoptes to get keypoint
+        key_vertex_count = 10
+        goal_key_points = np.zeros((len(reachable_set.polytope_list)*key_vertex_count, 2))
+        keypoint_k_lists = np.zeros((len(reachable_set.polytope_list)*key_vertex_count, 1))
+            
+        for i, k in enumerate(reachable_set.k_list):
+            p = reachable_set.polytope_list[i]
+            # p_projected = project_zonotope(p, dim=[0, 1], mode='full')
+            # scaled_key_points[p_idx*(1+key_vertex_count),:] = np.multiply(distance_scaling_array, p_projected.x[:, 0], dtype='float')
+            # key_point_to_zonotope_map[p_projected.x[:, 0].tostring()]=[[p], k]
+            # slice by k
+            # key_vertex_count: number of keypoints for zonotope
+            i_key_points, keypoint_k_list = get_k_random_edge_points_in_zonotope_OverR3T(p, reachable_set.generator_idx[i], N=10, k=k, lk=-0.5, uk=0.5) 
+            goal_key_points[i*key_vertex_count:(i+1)*key_vertex_count, :] = i_key_points
+            keypoint_k_lists[i*key_vertex_count:(i+1)*key_vertex_count, :] = keypoint_k_list
+
+        print("goal_key_points", goal_key_points.shape)
+        print("keypoint_k_lists", keypoint_k_lists.shape)
+
+        # Find closest keypoint
+        delta = goal_key_points - goal
+        print("delta", delta.shape)
+
+        ball = "l2"
+        if ball=="infinity":
+            d=np.linalg.norm(delta,ord=np.inf, axis=1)
+        elif ball=="l1":
+            d=np.linalg.norm(delta,ord=1, axis=1)
+        elif ball=="l2":
+            d=np.linalg.norm(np.multiply(self.distance_scaling_array, delta), ord=2, axis=1)
+        else:
+            raise NotImplementedError
+            
+        # get the parameter of closest_keypoint
+        k_closest = keypoint_k_lists[np.argmin(d), :]
+
+        # propagate
+        state = reachable_set.parent_state
+        state_list = [reachable_set.parent_state]
+        for step in range(int(reachable_set.reachable_set_step_size/reachable_set.nonlinear_dynamic_step_size)):
+            u = K * (k_closest - state[0]) # theta
+            # u = K * (k_closest - state[1]) # theta_dot
+            state = reachable_set.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = reachable_set.nonlinear_dynamic_step_size, return_as_env = False,
+                    starting_state=state)
+            state_list.append(state)
+
+        delta = state-goal
+
+        if ball=="infinity":
+            d=np.linalg.norm(delta,ord=np.inf, axis=1)
+        elif ball=="l1":
+            d=np.linalg.norm(delta,ord=1, axis=1)
+        elif ball=="l2":
+            d=np.linalg.norm(np.multiply(self.distance_scaling_array, delta), ord=2, axis=1)
+        else:
+            raise NotImplementedError
+
+        if d<goal_tolerance:
+            return True
+        else:
+            return False
+
+        # print("state_list", state_list)
+
+        # #enumerate inputs
+        # potential_inputs = np.linspace(pendulum_system.input_limits[0,0], pendulum_system.input_limits[1,0], input_samples)
+        # for u_i in potential_inputs:
+        #     state_list = []
+        #     state=reachable_set.parent_state
+        #     for step in range(int(step_size/nonlinear_dynamic_step_size)):
+        #         state = pendulum_system.forward_step(u=np.atleast_1d(u_i), linearlize=False, modify_system=False, step_size = nonlinear_dynamic_step_size, return_as_env = False,
+        #              starting_state= state)
+        #         state_list.append(state)
+        #         if np.linalg.norm(goal_state-state)<goal_tolerance:
+        #             print('Goal error is %d' % np.linalg.norm(goal_state-state))
+        #             return True, np.asarray(state_list)
+        #         if np.linalg.norm(goal_state_2-state)<goal_tolerance:
+        #             print('Goal error is %d' % np.linalg.norm(goal_state_2-state))
+        #             return True, np.asarray(state_list)
+        # return False, None
 
     rrt = SymbolicSystem_OverR3T(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, \
                              use_true_reachable_set=True, use_convex_hull=True)
@@ -88,8 +177,7 @@ def test_pendulum_planning():
 
     duration = 0
     # os.makedirs('R3T_Pendulum_'+experiment_name)
-    allocated_time = 300.0 # 0.1
-
+    allocated_time = 10.0 # 0.1
 
     VISUALIZE = True
     PLOT_LINEAR_RS = True
@@ -171,7 +259,7 @@ def test_pendulum_planning():
             # fig, ax = visualize_2D_AH_polytope_complete(rrt)
 
 
-            fig, ax = visualize_2D_AH_polytope(reachable_polytopes, states=explored_states, fig=fig, ax=ax,N=200,epsilon=0.01, alpha=0.1)
+            fig, ax = visualize_2D_AH_polytope(reachable_polytopes, states=explored_states, fig=fig, ax=ax,N=50,epsilon=0.01, alpha=0.1)
 
             ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
             ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)

@@ -222,7 +222,8 @@ class OverR3T:
         :param path_class: A class handel that is used to represent path
         '''
         # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/data/frs/FRS_pendulum_theta_0_theta_dot_0_k_0.mat")
-        self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/frs_files/')
+        # self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/frs_files/')
+        self.frs_dict = self.load_frs_dict(basepath='/home/yingxue/R3T_shared/r3t/data/frs/')
         complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
         self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
@@ -288,7 +289,7 @@ class OverR3T:
         slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
 
         for k, v in self.frs_dict.items():
-            print("k",k)
+            # print("k",k)
             if k[0] == round(child_state[0]) and k[1] == round(child_state[1]):
                 mat = self.frs_dict[k]
 
@@ -385,10 +386,10 @@ class OverR3T:
         # states.append(nearest_node.state)
         # states.append(new_state)
         # reachable_sets = []
-        # reachable_sets.append(new_node.reachable_set.polytope_list)
+        # # reachable_sets.append(new_node.reachable_set.polytope_list)
         # reachable_sets.append(nearest_node.reachable_set.polytope_list)
-        # visualize_2D_AH_polytope_debug(reachable_sets,states = states, N=50)
-        # exit()
+        # visualize_2D_AH_polytope_debug(reachable_sets, states = states, N=50)
+        # # exit()
 
         if explore_deterministic_next_state:
             return True, new_node, deterministic_next_state
@@ -465,14 +466,14 @@ class OverR3T:
                     new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
                     discard = False     # TODO: Make it True and reconsider for collision checking
                     new_state_id = hash(str(new_state))
-                    print("running sampler 2")
+                    # print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree
                     # if new_state_id in self.state_to_node_map or discard:
 
                     if new_state_id in self.state_to_node_map or discard:
                         # FIXME: how to prevent repeated state exploration?
                         # print('Warning: state already explored')
-                        print("running sampler 3")
+                        # print("running sampler 3")
                         continue    # sanity check to prevent numerical errors
 
                     if not explore_deterministic_next_state:
