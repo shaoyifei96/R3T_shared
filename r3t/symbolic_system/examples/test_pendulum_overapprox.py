@@ -88,7 +88,7 @@ def test_pendulum_planning():
 
     duration = 0
     # os.makedirs('R3T_Pendulum_'+experiment_name)
-    allocated_time = 10.0 # 0.1
+    allocated_time = 300.0 # 0.1
 
 
     VISUALIZE = True

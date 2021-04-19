@@ -39,7 +39,7 @@ def zonotope_slice_345(z, slice_idx, slice_value):
 if __name__ == "__main__":
 
     mat = scipy.io.loadmat(
-        "/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat"
+        "/media/hardik/Windows/Ubuntu/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat"
     )
 
     # time
