@@ -23,7 +23,7 @@ class Pendulum(DTContinuousSystem):
         self.I = self.m*self.l**2+self.m_l*self.l**2/12
         self.t = -(self.m*self.g*self.l*sym.sin(self.x[0])+self.m_l*self.g*self.l/2*sym.sin(self.x[0]))
         self.f = np.asarray([self.x[1],1/self.I*(self.t+self.u[0]-self.b*self.x[1])])
-
+        
         #symbolic system
         DTContinuousSystem.__init__(self, self.f, self.x, self.u, self.env, input_limits)
 

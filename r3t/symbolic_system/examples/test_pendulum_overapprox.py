@@ -17,7 +17,7 @@ matplotlib.rcParams.update({'font.size': 14})
 
 reachable_set_epsilon = 2
 goal_tolerance = 5e-2
-input_limit = 1
+input_limit = 200
 input_samples = 9
 
 def test_pendulum_planning():

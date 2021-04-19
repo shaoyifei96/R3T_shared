@@ -76,7 +76,7 @@ class PolytopeReachableSet(ReachableSet):
         state = self.parent_state
         state_list = [self.parent_state]
         for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
-            u = K * (k_closest - state[1])
+            u = K * (k_closest - state[1])   # 
             try:
                 state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
                         starting_state= state)
@@ -84,6 +84,9 @@ class PolytopeReachableSet(ReachableSet):
             except Exception as e:
                 print('Caught (find_closest_state_OverR3T) %s' %e)
                 return np.ndarray.flatten(closest_point), np.asarray([])
+        print("initial state:", state_list[0])
+        print("final state:", state_list[-1])
+        print("k_closest",k_closest)
         # print("state_list", state_list)
         return np.ndarray.flatten(state), state_list
 

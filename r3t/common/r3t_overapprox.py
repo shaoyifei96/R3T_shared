@@ -288,7 +288,7 @@ class OverR3T:
         slice_value = np.array(child_state) # 2x1 vector: theta0, theta_dot0
 
         for k, v in self.frs_dict.items():
-            print("k",k)
+            # print("k",k)
             if k[0] == round(child_state[0]) and k[1] == round(child_state[1]):
                 mat = self.frs_dict[k]
 
@@ -385,7 +385,7 @@ class OverR3T:
         # states.append(nearest_node.state)
         # states.append(new_state)
         # reachable_sets = []
-        # reachable_sets.append(new_node.reachable_set.polytope_list)
+        # # reachable_sets.append(new_node.reachable_set.polytope_list)
         # reachable_sets.append(nearest_node.reachable_set.polytope_list)
         # visualize_2D_AH_polytope_debug(reachable_sets,states = states, N=50)
         # exit()
