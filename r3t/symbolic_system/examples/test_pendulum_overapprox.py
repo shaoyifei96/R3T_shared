@@ -62,8 +62,6 @@ def test_pendulum_planning():
 
         return False, None
 
-        print("reachable_set.polytope_list", reachable_set.polytope_list)
-
         # distance=np.inf
         # distance1 = 100
         # distance2 = 100
@@ -146,6 +144,8 @@ def test_pendulum_planning():
         else:
             raise NotImplementedError
 
+        exit()
+
         if d<goal_tolerance:
             return True
         else:
@@ -176,7 +176,7 @@ def test_pendulum_planning():
     experiment_name = datetime.fromtimestamp(time.time()).strftime('%Y%m%d_%H-%M-%S')
 
     duration = 0
-    # os.makedirs('R3T_Pendulum_'+experiment_name)
+    os.makedirs('R3T_Pendulum_'+experiment_name)
     allocated_time = 10.0 # 0.1
 
     VISUALIZE = True
@@ -272,9 +272,9 @@ def test_pendulum_planning():
             plt.ylim([-12,12])
             plt.tight_layout()
             plt.title('$|u| \leq %.2f$ Reachable Set after %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
-            # plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-            plt.show()
-            plt.pause(0.2)
+            plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
+            # plt.show()
+            # plt.pause(0.2)
             plt.clf()
             plt.close()
             #

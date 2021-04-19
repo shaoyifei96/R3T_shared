@@ -130,8 +130,9 @@ class PolytopeReachableSet(ReachableSet):
         state = self.parent_state
         state_list = [self.parent_state]
         for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
-            u = K * (k_closest - state[0]) # theta
+            # u = K * (k_closest - state[0]) # theta
             # u = K * (k_closest - state[1]) # theta_dot
+            u = 2 * k_closest
             try:
                 state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
                         starting_state= state)
