@@ -5,7 +5,8 @@ from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
 from r3t.symbolic_system.symbolic_system_r3t_overapprox import SymbolicSystem_OverR3T
 from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
-from pypolycontain.lib.operations import distance_point_polytope
+from pypolycontain.lib.operations import distance_point_polytope, to_AH_polytope
+from pypolycontain.utils.random_polytope_generator import get_k_random_edge_points_in_zonotope_OverR3T
 from r3t.utils.visualization import visualize_node_tree_2D
 import time
 from datetime import datetime
@@ -18,7 +19,7 @@ matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
 
 reachable_set_epsilon = 2
-goal_tolerance = 5e-2
+goal_tolerance = 0.5 # 5e-2
 input_limit = 200
 input_samples = 9
 
@@ -58,37 +59,42 @@ def test_pendulum_planning():
         rnd[1] = r*np.sin(theta)
         return rnd
 
-    def contains_goal_function(reachable_set, goal_state):
+    def contains_goal_function(reachable_set, goal_state, key_vertex_count=20):
 
-        return False, None
+        print()
+        print("CONTAINS GOAL!!")
 
-        # distance=np.inf
-        # distance1 = 100
-        # distance2 = 100
-        # if np.linalg.norm(reachable_set.parent_state-goal_state)<2:
-        #     for P in reachable_set.polytope_list:
-        #         P_projected = project_zonotope(P, dim=[0, 1], mode='full')
-        #         distance, projection = distance_point_polytope(P_projected, goal_state)
+        distance=np.inf
+        distance1 = 100
+        distance2 = 100
+        if np.linalg.norm(reachable_set.parent_state-goal_state)<2:
+            print("goal_state might have a chance")
+            for P in reachable_set.polytope_list:
+                P_projected = project_zonotope(P, dim=[0, 1], mode='full')
+                distance, projection = distance_point_polytope(P_projected, goal_state)
+                distance1 = min(distance1, distance)
+        elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<2:
+            print("goal_state_2 might have a chance")
+            for P in reachable_set.polytope_list:
+                P_projected = project_zonotope(P, dim=[0, 1], mode='full')
+                distance, projection = distance_point_polytope(P_projected, goal_state_2)
+                distance2 = min(distance2, distance)
+        else:
+            return False, None
 
-        #         distance1 = min(distance1, distance)
-        # elif np.linalg.norm(reachable_set.parent_state-goal_state_2)<2:
-        #     for P in reachable_set.polytope_list:
-        #         P_projected = project_zonotope(P, dim=[0, 1], mode='full')
-        #         distance, projection = distance_point_polytope(P_projected, goal_state_2)
-        #         distance2 = min(distance2, distance)
-        # else:
-        #     return False, None
+        if min(distance1, distance2) > reachable_set_epsilon:
+            print("Not within reachable_set_epsilon")
+            print("distance1", distance1)
+            print("distance2", distance2)
+            print("min", min(distance1, distance2))
+            return False, None
 
-        # if min(distance1, distance2) > reachable_set_epsilon:
-        #     return False, None
-
-        # if distance1 < distance2:
-        #     goal = goal_state
-        # else:
-        #     goal = goal_state_2
+        if distance1 < distance2:
+            goal = goal_state
+        else:
+            goal = goal_state_2
 
         # slice polyoptes to get keypoint
-        key_vertex_count = 10
         goal_key_points = np.zeros((len(reachable_set.polytope_list)*key_vertex_count, 2))
         keypoint_k_lists = np.zeros((len(reachable_set.polytope_list)*key_vertex_count, 1))
             
@@ -99,16 +105,15 @@ def test_pendulum_planning():
             # key_point_to_zonotope_map[p_projected.x[:, 0].tostring()]=[[p], k]
             # slice by k
             # key_vertex_count: number of keypoints for zonotope
-            i_key_points, keypoint_k_list = get_k_random_edge_points_in_zonotope_OverR3T(p, reachable_set.generator_idx[i], N=10, k=k, lk=-0.5, uk=0.5) 
+            i_key_points, keypoint_k_list = get_k_random_edge_points_in_zonotope_OverR3T(p, reachable_set.generator_idx[i], N=key_vertex_count, k=k, lk=-0.5, uk=0.5) 
             goal_key_points[i*key_vertex_count:(i+1)*key_vertex_count, :] = i_key_points
             keypoint_k_lists[i*key_vertex_count:(i+1)*key_vertex_count, :] = keypoint_k_list
 
-        print("goal_key_points", goal_key_points.shape)
-        print("keypoint_k_lists", keypoint_k_lists.shape)
+        # print("goal_key_points", goal_key_points.shape)
+        # print("keypoint_k_lists", keypoint_k_lists.shape)
 
         # Find closest keypoint
         delta = goal_key_points - goal
-        print("delta", delta.shape)
 
         ball = "l2"
         if ball=="infinity":
@@ -116,7 +121,7 @@ def test_pendulum_planning():
         elif ball=="l1":
             d=np.linalg.norm(delta,ord=1, axis=1)
         elif ball=="l2":
-            d=np.linalg.norm(np.multiply(self.distance_scaling_array, delta), ord=2, axis=1)
+            d=np.linalg.norm(delta, ord=2, axis=1)
         else:
             raise NotImplementedError
             
@@ -127,7 +132,9 @@ def test_pendulum_planning():
         state = reachable_set.parent_state
         state_list = [reachable_set.parent_state]
         for step in range(int(reachable_set.reachable_set_step_size/reachable_set.nonlinear_dynamic_step_size)):
-            u = K * (k_closest - state[0]) # theta
+            K = 2
+            u = K * k_closest
+            # u = K * (k_closest - state[0]) # theta
             # u = K * (k_closest - state[1]) # theta_dot
             state = reachable_set.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = reachable_set.nonlinear_dynamic_step_size, return_as_env = False,
                     starting_state=state)
@@ -136,39 +143,21 @@ def test_pendulum_planning():
         delta = state-goal
 
         if ball=="infinity":
-            d=np.linalg.norm(delta,ord=np.inf, axis=1)
+            d=np.linalg.norm(delta,ord=np.inf)
         elif ball=="l1":
-            d=np.linalg.norm(delta,ord=1, axis=1)
+            d=np.linalg.norm(delta,ord=1)
         elif ball=="l2":
-            d=np.linalg.norm(np.multiply(self.distance_scaling_array, delta), ord=2, axis=1)
+            d=np.linalg.norm(delta, ord=2)
         else:
             raise NotImplementedError
 
-        exit()
+        print("closest distance of keypoint to goal: ", d)
 
         if d<goal_tolerance:
-            return True
+            return True, state_list
         else:
-            return False
+            return False, None
 
-        # print("state_list", state_list)
-
-        # #enumerate inputs
-        # potential_inputs = np.linspace(pendulum_system.input_limits[0,0], pendulum_system.input_limits[1,0], input_samples)
-        # for u_i in potential_inputs:
-        #     state_list = []
-        #     state=reachable_set.parent_state
-        #     for step in range(int(step_size/nonlinear_dynamic_step_size)):
-        #         state = pendulum_system.forward_step(u=np.atleast_1d(u_i), linearlize=False, modify_system=False, step_size = nonlinear_dynamic_step_size, return_as_env = False,
-        #              starting_state= state)
-        #         state_list.append(state)
-        #         if np.linalg.norm(goal_state-state)<goal_tolerance:
-        #             print('Goal error is %d' % np.linalg.norm(goal_state-state))
-        #             return True, np.asarray(state_list)
-        #         if np.linalg.norm(goal_state_2-state)<goal_tolerance:
-        #             print('Goal error is %d' % np.linalg.norm(goal_state_2-state))
-        #             return True, np.asarray(state_list)
-        # return False, None
 
     rrt = SymbolicSystem_OverR3T(pendulum_system, uniform_sampler, step_size, contains_goal_function=contains_goal_function, \
                              use_true_reachable_set=True, use_convex_hull=True)
@@ -193,7 +182,7 @@ def test_pendulum_planning():
             VISUALIZE = True
 
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=True, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes

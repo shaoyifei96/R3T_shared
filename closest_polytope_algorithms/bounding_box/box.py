@@ -168,7 +168,7 @@ def AH_polytope_to_box(ahp, return_AABB = False):
     #     return zonotope_to_box(ahp, return_AABB=return_AABB)
     # if ahp.type != 'AH_polytope':
     #     print('Warning: Input is not AH-Polytope!')
-    assert(isinstance(ahp, AH_polytope))
+    # assert(isinstance(ahp, AH_polytope))
     ahp = to_AH_polytope(ahp)
     model = Model("ah_polytope_AABB")
     model.setParam('OutputFlag', False)

@@ -38,7 +38,8 @@ class PolytopeReachableSet(ReachableSet):
             distance = np.inf
             closest_state = None
             for i, polytope in enumerate(self.polytope_list):
-                current_distance, current_closest_state = distance_point_polytope(polytope, goal_state, ball='l2')
+                p_project = project_zonotope(polytope, dim=[0, 1], mode='full')
+                current_distance, current_closest_state = distance_point_polytope(p_project, goal_state, ball='l2')
                 if current_distance < self.epsilon:
                     if return_closest_state:
                         return True, goal_state
@@ -51,7 +52,6 @@ class PolytopeReachableSet(ReachableSet):
             return False, closest_state
 
         except TypeError:
-
             distance, closest_state = distance_point_polytope(self.polytope_list, goal_state, ball='l2')
             if distance < self.epsilon:
                 if return_closest_state:
@@ -65,62 +65,11 @@ class PolytopeReachableSet(ReachableSet):
     def contains_goal(self, goal_state):
         # check if goal is epsilon away from the reachable sets
         if self.contains_goal_function is not None:
-            print("conatins goal polytop list",self.polytope_list)
+            # print("contains goal polytop list",self.polytope_list)
             return self.contains_goal_function(self, goal_state)
         
 
         raise NotImplementedError
-    '''
-        print("reachable_set.polytope_list", self.polytope_list)
-        goal_state_2 = -goal_state
-
-        distance=np.inf
-        distance1 = 100
-        distance2 = 100
-        if np.linalg.norm(self.parent_state-goal_state)<2:
-            for P in self.polytope_list:
-                P_projected = project_zonotope(P, dim=[0, 1], mode='full')
-                distance, projection = distance_point_polytope(P_projected, goal_state)
-
-                print()
-                distance1 = min(distance1, distance)
-        elif np.linalg.norm(self.parent_state-goal_state_2)<2:
-            for P in self.polytope_list:
-                P_projected = project_zonotope(P, dim=[0, 1], mode='full')
-                distance, projection = distance_point_polytope(P_projected, goal_state_2)
-
-
-                distance2 = min(distance2, distance)
-        else:
-            return False, None
-        if min(distance1,distance2) > reachable_set_epsilon:
-            return False, None
-
-        if distance1 < distance2:
-            goal = goal_state
-        else:
-            goal = goal_state_2
-
-
-        # slice polyoptes to get keypoint
-        key_vertex_count = 10
-        goal_key_points = np.zeros((len(self.polytope_list)*key_vertex_count, 2))
-            
-        for i, k in enumerate(self.k_list):
-            p = self.polytope_list[i]
-            # p_projected = project_zonotope(p, dim=[0, 1], mode='full')
-            # scaled_key_points[p_idx*(1+key_vertex_count),:] = np.multiply(distance_scaling_array, p_projected.x[:, 0], dtype='float')
-            # key_point_to_zonotope_map[p_projected.x[:, 0].tostring()]=[[p], k]
-            # slice by k
-            # key_vertex_count: number of keypoints for zonotope
-            i_key_points, keypoint_k_lists = get_k_random_edge_points_in_zonotope_OverR3T(p, self.generator_idx[i], N=10, k=k, lk=-0.5, uk=0.5) 
-            goal_key_points[i*key_vertex_count:(i+1)*key_vertex_count, :] = i_key_points
-
-
-        print("goal_key_points", goal_key_points.shape)
-        exit()
-
-    '''
 
 
     def find_closest_state_OverR3T(self, query_point, k_closest, K=0.5):
@@ -291,11 +240,13 @@ class SymbolicSystem_StateTree(StateTree):
         try:
             state_ids_list = []
             for p in query_reachable_set.polytope_list:
-                lu = AH_polytope_to_box(p)
+                p_project = project_zonotope(p, dim=[0, 1], mode='full')
+                lu = AH_polytope_to_box(p_project)
                 scaled_lu = np.multiply(self.repeated_distance_scaling_array,lu)
                 state_ids_list.extend(list(self.state_idx.intersection(scaled_lu)))
             return state_ids_list
         except TypeError:
+            assert False, "state_ids_in_reachable_set: Not having a zonotope list"
             lu = AH_polytope_to_box(query_reachable_set.polytope_list)
             scaled_lu = np.multiply(self.repeated_distance_scaling_array, lu)
             return list(self.state_idx.intersection(scaled_lu))

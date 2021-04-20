@@ -35,7 +35,7 @@ def to_AH_polytope(P):
     """
     #This file is used
     # print(f"P name:{P.__name__}")
-    if P.__name__=="AH_polytope":#P.__name__=="AH_polytope":
+    if P.__name__=="AH_polytope": #P.__name__=="AH_polytope":
         return P
     elif P.__name__=="H_polytope":
         n=P.H.shape[1]
