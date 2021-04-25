@@ -70,7 +70,7 @@ def test_pendulum_planning():
     os.makedirs('Basic_RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 100, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 300, rewire=True, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
 
@@ -102,6 +102,8 @@ def test_pendulum_planning():
         ax.set_ylim([-10, 10])
         ax.set_xlabel('$\\theta (rad)$')
         ax.set_ylabel('$\dot{\\theta} (rad/s)$')
+
+        print("making fig")
 
         duration += (end_time-start_time)
         plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))

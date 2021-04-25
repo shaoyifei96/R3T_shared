@@ -89,7 +89,7 @@ def test_pendulum_planning():
     allocated_time = 2.0# 0.1
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=True, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
             found_goal = True
         end_time = time.time()
         #get rrt polytopes
@@ -157,7 +157,7 @@ def test_pendulum_planning():
         plt.tight_layout()
         plt.title('$|u| \leq %.2f$ Reachable Set after %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
         plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
-        plt.pause(0.02)
+        # plt.pause(0.02)
         # plt.show()
         plt.clf()
         plt.close()

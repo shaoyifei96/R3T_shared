@@ -2,9 +2,9 @@
 */.idea
 *.pyc
 */*.pyc
-*/precomputation_results/*
 */*.png
 *.png
 *.log
 */*.log
 */*.p
+
