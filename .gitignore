@@ -139,3 +139,6 @@ checkpoints/
 
 *.zip
 *.mat
+
+# ---------- Images outputs ------------
+R3T_Pendulum_*
