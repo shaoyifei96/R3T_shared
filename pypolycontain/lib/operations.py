@@ -8,6 +8,13 @@ except:
     warnings.warn("You don't have scipy package installed. You may get error while using some feautures.")
 
 # Pydrake
+# from pydrake.common.deprecation import DrakeDeprecationWarning
+# warnings.simplefilter("ignore", DrakeDeprecationWarning)  
+
+# import warnings
+# warnings.filterwarnings("ignore")
+import gurobipy as gp
+
 try:
     import pydrake.solvers.mathematicalprogram as MP
     import pydrake.solvers.gurobi as Gurobi_drake
@@ -17,6 +24,10 @@ try:
     gurobi_solver=Gurobi_drake.GurobiSolver()
     license = gurobi_solver.AcquireLicense()
     OSQP_solver=OSQP_drake.OsqpSolver()
+
+    # from pydrake.common.deprecation import DrakeDeprecationWarning
+    # warnings.simplefilter("always", DrakeDeprecationWarning)    
+
 except:
     warnings.warn("You don't have pydrake installed properly. Methods that rely on optimization may fail.")
     
@@ -281,7 +292,6 @@ def distance_point_polytope(P, x, ball="infinity", solver="Gurobi", distance_sca
     Q=to_AH_polytope(P)
     a=P.distance_constraint.evaluator()
     x_vector=x_vector.reshape(max(x_vector.shape),1)
-#    print "sadra",x_vector.shape
     a.UpdateCoefficients(np.hstack((Q.T,-np.eye(Q.n))), x_vector - Q.t)
     if solver=="Gurobi":
         result=gurobi_solver.Solve(prog,None,None)

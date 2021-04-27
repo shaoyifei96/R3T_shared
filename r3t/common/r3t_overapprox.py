@@ -452,9 +452,7 @@ class OverR3T:
             self.goal_node=goal_node
 
         while True:
-
-            print("running search")
-
+            # print("running search")
             if stop_on_first_reach:
                 if self.goal_node is not None:
                     print('Found path to goal with cost %f in %f seconds after exploring %d nodes' % (self.goal_node.cost_from_root,
@@ -615,7 +613,7 @@ class OverR3T:
                     if contains_goal:
                         print("build_tree_to_goal_state - Contains goal")
 
-                    # check for obstacles
+                        # check for obstacles
                         cost_to_go, path = new_node.reachable_set.plan_collision_free_path_in_set(goal_state)
                         #allow for fuzzy goal check
                         # if cost_to_go == np.inf:
