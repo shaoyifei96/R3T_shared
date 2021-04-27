@@ -274,7 +274,7 @@ class R3T:
             return True, new_node
 
     def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e3),\
-                                 save_true_dynamics_path = False):
+                                 save_true_dynamics_path = False, Z_obs_list=None):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
         :param goal_state:  The goal for the planner.
@@ -333,7 +333,7 @@ class R3T:
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
                     # print("running sampler 1_2")
                     # find the closest state in the reachable set and use it to extend the tree
-                    new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
+                    new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path, Z_obs_list=Z_obs_list)
                     # print("running sampler 1_3")
                     new_state_id = hash(str(new_state))
                     # print("running sampler 2")

@@ -70,7 +70,7 @@ def test_pendulum_planning():
     os.makedirs('Basic_RRT_Pendulum_'+experiment_name)
     while(1):
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 300, rewire=True, explore_deterministic_next_state=False) is not None:
+        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= 300, rewire=False, explore_deterministic_next_state=False) is not None:
             found_goal = True
         end_time = time.time()
 
@@ -80,40 +80,40 @@ def test_pendulum_planning():
                 goal_override = np.asarray([np.pi,0.0])
             else:
                 goal_override = np.asarray([-np.pi, 0.0])
-        # Plot state tree
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        if found_goal:
-            fig, ax = visualize_node_tree_2D_old(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
-        else:
-            fig, ax = visualize_node_tree_2D_old(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
-        # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
-        # for explored_state in explored_states:
-        #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
-        ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
-        ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
-        ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+        # # Plot state tree=
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # if found_goal:
+        #     fig, ax = visualize_node_tree_2D_old(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal, goal_override=goal_override)
+        # else:
+        #     fig, ax = visualize_node_tree_2D_old(rrt, fig, ax, s=0.5, linewidths=0.15, show_path_to_goal=found_goal)
+        # # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
+        # # for explored_state in explored_states:
+        # #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
+        # ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
+        # ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
+        # ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
 
-        ax.grid(True, which='both')
-        y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
-        ax.yaxis.set_major_formatter(y_formatter)
-        ax.set_yticks(np.arange(-10, 10, 2))
-        ax.set_xlim([-4, 4])
-        ax.set_ylim([-10, 10])
-        ax.set_xlabel('$\\theta (rad)$')
-        ax.set_ylabel('$\dot{\\theta} (rad/s)$')
+        # ax.grid(True, which='both')
+        # y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+        # ax.yaxis.set_major_formatter(y_formatter)
+        # ax.set_yticks(np.arange(-10, 10, 2))
+        # ax.set_xlim([-4, 4])
+        # ax.set_ylim([-10, 10])
+        # ax.set_xlabel('$\\theta (rad)$')
+        # ax.set_ylabel('$\dot{\\theta} (rad/s)$')
 
-        print("making fig")
+        # print("making fig")
 
-        duration += (end_time-start_time)
-        plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
-        plt.savefig('Basic_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
-        # plt.show()
-        plt.xlim([-4, 4])
-        plt.ylim([-10,10])
-        plt.clf()
-        plt.close()
-        print('Done plotting')
+        # duration += (end_time-start_time)
+        # plt.title('RRT Tree after %.2f seconds (explored %d nodes)' %(duration, rrt.node_tally))
+        # plt.savefig('Basic_RRT_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
+        # # plt.show()
+        # plt.xlim([-4, 4])
+        # plt.ylim([-10,10])
+        # plt.clf()
+        # plt.close()
+        # print('Done plotting')
         if found_goal:
             break
 

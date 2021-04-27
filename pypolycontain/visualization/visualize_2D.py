@@ -16,6 +16,8 @@ from matplotlib.collections import PatchCollection
 from scipy.spatial import ConvexHull
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from pypolycontain.lib.operations import to_AH_polytope
+
 
 try:
     from pypolycontain.lib.operations import AH_polytope_vertices
@@ -153,6 +155,48 @@ def visualize_3D_zonotopes(list_of_zonotopes,a=1.5,list_of_dimensions=None):
     ax.set_zlim3d([np.min(x_all[:,2])-a,a+np.max(x_all[:,2])])
     ax.add_collection3d(p)
     ax.grid3d(color=(0,0,0), linestyle='--', linewidth=0.3)
+
+
+def visualize_obs(Z_obs_list, a=1.5, color=None, alpha=0.5, fig=None, ax=None, axis_limit=[0], title=r"Obstacles", N=20, epsilon=0.001):
+    '''
+    Z_obs_list (list):  List of Zonotopes
+    '''
+    p_list=[]
+    v_all=np.empty((0,2))
+    new_list_of_AH_polytopes = []
+    for i, Z_obs in enumerate(Z_obs_list):
+        Q_obs = to_AH_polytope(Z_obs)
+        v,w=AH_polytope_vertices(Q_obs,N=N,epsilon=epsilon)
+        # Minkowski sum with epsilon ball
+        try:
+            v=v[ConvexHull(v).vertices,:]
+        except:
+            warnings.warn(str(Q)+": was degenerate or very thin to plot. Adding a tube of"+str(epsilon)+"N:"+str(v.shape))
+            v=w[ConvexHull(w).vertices,:]
+        v_all=np.vstack((v_all,v))
+        p=Polygon(v)
+        p_list.append(p)
+        new_list_of_AH_polytopes.append(Z_obs)
+
+    if color is None:
+        p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes], alpha=alpha, linewidths=0.)
+    else:
+        p_patch = PatchCollection(p_list, color=color,alpha=alpha)
+
+    if fig is None or ax is None:
+        fig, ax = plt.subplots()
+    ax.add_collection(p_patch)
+
+    if len(axis_limit)==1:
+        ax.set_xlim([np.min(v_all[:,0])-a,a+np.max(v_all[:,0])])
+        ax.set_ylim([np.min(v_all[:,1])-a,a+np.max(v_all[:,1])])
+    else:
+        ax.set_xlim([axis_limit[0],axis_limit[1]])
+        ax.set_ylim([axis_limit[2],axis_limit[3]])
+    ax.grid(color=(0,0,0), linestyle='--', linewidth=0.3)
+    ax.set_title(title)
+    return fig,ax
+
 
 def visualize_2D_AH_polytope(list_of_AH_polytopes,a=1.5,color=None,alpha=0.5,fig=None,ax=None,axis_limit=[0],title=r"AH-Polytopes",N=20,epsilon=0.001):
     p_list=[]

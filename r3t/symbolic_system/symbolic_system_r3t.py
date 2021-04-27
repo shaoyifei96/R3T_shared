@@ -7,6 +7,8 @@ from rtree import index
 from closest_polytope_algorithms.bounding_box.polytope_tree import PolytopeTree
 from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box, \
     point_to_box_dmax, point_to_box_distance
+from closest_polytope_algorithms.bounding_box.box import point_in_box
+from pypolycontain.lib.operations import to_AH_polytope
 
 class PolytopeReachableSet(ReachableSet):
     def __init__(self, parent_state, polytope_list, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
@@ -70,7 +72,7 @@ class PolytopeReachableSet(ReachableSet):
         raise NotImplementedError
 
 
-    def find_closest_state(self, query_point, save_true_dynamics_path=False):
+    def find_closest_state(self, query_point, save_true_dynamics_path=False, Z_obs_list=None):
         '''
         Find the closest state from the query point to a given polytope
         :param query_point:
@@ -119,7 +121,19 @@ class PolytopeReachableSet(ReachableSet):
                 try:
                     state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
                          starting_state= state)
+
+                    # TODO: check for collision
+                    # r3t/dubin_car/dubin_car_rg_rrt_star.py
+                    # point_collides_with_obstacle
+                    for obs in Z_obs_list:
+                        obs_p = to_AH_polytope(obs)
+                        obs_box = AH_polytope_to_box(obs_p, return_AABB = True)
+                        if point_in_box(state, obs_box):
+                            # collided, Just discard, same as plan_collision_free_path_in_set()
+                            return np.ndarray.flatten(closest_point), True, np.asarray([])   
+                        
                     state_list.append(state)
+
                 except Exception as e:
                     print('Caught %s' %e)
                     return np.ndarray.flatten(closest_point), True, np.asarray([])
