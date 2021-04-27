@@ -37,7 +37,6 @@ class PolytopeReachableSet(ReachableSet):
         # print(distance_point(self.polytope, goal_state)[0])
         # print(self.polytope)
         try:
-            print("NONONONONONONONO\n")
             #multimodal
             distance = np.inf
             closest_state = None
@@ -56,8 +55,6 @@ class PolytopeReachableSet(ReachableSet):
                         closest_state = current_closest_state
             return False, closest_state
         except TypeError:
-
-            print("HAHAHAHAHHAHAHAHA\n")
 
             distance, closest_state = distance_point_polytope(self.polytope_list, goal_state, ball='l2')
             if distance < self.epsilon:
@@ -233,7 +230,6 @@ class PolytopeReachableSetTree(ReachableSetTree):
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         '''
-
         :param query_state:
         :param d:
         :return:
