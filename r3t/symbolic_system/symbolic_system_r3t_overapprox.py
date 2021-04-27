@@ -7,6 +7,10 @@ from rtree import index
 from closest_polytope_algorithms.bounding_box.polytope_tree import PolytopeTree
 from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box, \
     point_to_box_dmax, point_to_box_distance
+# AABB collision check
+from closest_polytope_algorithms.bounding_box.box import point_in_box
+from pypolycontain.lib.operations import to_AH_polytope
+from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box
 
 class PolytopeReachableSet(ReachableSet):
     def __init__(self, parent_state, polytope_list, generator_idx, k_list, sys=None, epsilon=1e-3, contains_goal_function = None, deterministic_next_state = None, \
@@ -72,6 +76,38 @@ class PolytopeReachableSet(ReachableSet):
         raise NotImplementedError
 
 
+    def find_closest_state_OverR3T_AABB(self, query_point, k_closest, K=0.5, Z_obs_list=None):
+        # TODO: Add Cost Later
+        # u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
+        # #simulate nonlinear forward dynamics
+        state = self.parent_state
+        state_list = [self.parent_state]
+        for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
+            # u = K * (k_closest - state[0]) # theta
+            # u = K * (k_closest - state[1]) # theta_dot
+            u = 2 * k_closest
+            try:
+                state = self.sys.forward_step(u=np.atleast_1d(u), linearlize=False, modify_system=False, step_size = self.nonlinear_dynamic_step_size, return_as_env = False,
+                        starting_state= state)
+                state_list.append(state)
+
+                # Collision Check
+                for obs in Z_obs_list:
+                    obs_p = to_AH_polytope(obs)
+                    obs_box = AH_polytope_to_box(obs_p, return_AABB = True)
+                    if point_in_box(state, obs_box):
+                        # collided, Just discard, same as plan_collision_free_path_in_set()
+                        return np.ndarray.flatten(state), True, np.asarray([])   
+
+            except Exception as e:
+                print('Caught (find_closest_state_OverR3T) %s' %e)
+                # return np.ndarray.flatten(state), np.asarray([])
+                return np.ndarray.flatten(state), True, np.asarray([])
+        # print("state_list", state_list)
+        # return np.ndarray.flatten(state), state_list
+        return np.ndarray.flatten(state), False, state_list
+
+
     def find_closest_state_OverR3T(self, query_point, k_closest, K=0.5):
         # TODO: Add Cost Later
         # u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
@@ -88,7 +124,7 @@ class PolytopeReachableSet(ReachableSet):
                 state_list.append(state)
             except Exception as e:
                 print('Caught (find_closest_state_OverR3T) %s' %e)
-                return np.ndarray.flatten(closest_point), np.asarray([])
+                return np.ndarray.flatten(state), np.asarray([])
         # print("state_list", state_list)
         return np.ndarray.flatten(state), state_list
 
@@ -183,7 +219,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # self.state_idx.insert(state_id, np.repeat(reachable_set.parent_state, 2))
         # self.state_id_to_state[state_id] = reachable_set.parent_state
 
-    def nearest_k_neighbor_ids(self, query_state, k=1, return_state_projection = False):
+    def nearest_k_neighbor_ids(self, query_state, k=5, return_state_projection = False):
         # print("nearest_k_neighbor_ids")
 
         if self.polytope_tree is None:

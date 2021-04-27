@@ -2,6 +2,12 @@ import numpy as np
 from pypolycontain.lib.zonotope import zonotope, zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from pypolycontain.lib.zonotope import zonotope_inside
+
+# AABB collision check
+from closest_polytope_algorithms.bounding_box.box import point_in_box
+from pypolycontain.lib.operations import to_AH_polytope
+from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box
+
 from matplotlib.pyplot import show
 
 import scipy.io
@@ -104,6 +110,14 @@ def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_li
         for Z_obs in Z_obs_list:
             if check_zono_contain(zono, Z_obs):
                 return True
+            
+            # Box-to-box collision
+            # Current code is incorrect, it only check the center of zonotope with obs boxes
+            # obs_p = to_AH_polytope(Z_obs)
+            # obs_box = AH_polytope_to_box(obs_p, return_AABB = True)
+            # if point_in_box(zono.x, obs_box):
+            #     # collided, Just discard, same as plan_collision_free_path_in_set()
+            #     return True
 
     return False
 

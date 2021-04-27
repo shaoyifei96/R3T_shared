@@ -481,15 +481,19 @@ class OverR3T:
                     # print("k_closest", k_closest)
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
 
-                    # collision check
+                    # find the closest state in the reachable set and use it to extend the tree
+                    # ------------- option 1 --------------
                     collided = check_zonotope_collision(nearest_node.complete_reachable_set[round(k_closest)], nearest_node.generator_list[round(k_closest)], k_closest, nearest_node.state, Z_obs_list=Z_obs_list)
+                    new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
+                    # ----------- option 1 (END) ----------
+
+                    # ------------- option 2 --------------
+                    new_state, collided, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T_AABB(random_sample, k_closest, Z_obs_list=Z_obs_list)
+                    # ----------- option 2 (END) ----------
+
                     if collided:
                         continue
 
-                    # # find the closest state in the reachable set and use it to extend the tree
-                    # # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
-                    # print("running sampler 1")
-                    new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
                     new_state_id = hash(str(new_state))
                     # print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree

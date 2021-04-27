@@ -198,7 +198,7 @@ def test_pendulum_planning():
             # Plot state tree
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=2, linewidths=0.5, show_path_to_goal=found_goal, goal_override=goal_override)
+            fig, ax = visualize_node_tree_2D(rrt, fig, ax, s=2, linewidths=0.25, show_path_to_goal=found_goal, goal_override=goal_override)
             # fig, ax = visZ(reachable_polytopes, title="", alpha=0.07, fig=fig,  ax=ax, color='gray')
             # for explored_state in explored_states:
             #     plt.scatter(explored_state[0], explored_state[1], facecolor='red', s=6)
