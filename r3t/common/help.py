@@ -20,9 +20,6 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=
     '''
     generator_idx: always len 3
     '''
-
-    # print("z.G", z.G.shape)
-    # print()
     generator_idx = np.array(generator_idx).squeeze()
     slice_G = z.G[slice_dim, generator_idx]
 
@@ -34,16 +31,17 @@ def zonotope_slice(z, generator_idx=[1, 2, 3], slice_dim=[2, 3, 4], slice_value=
     # print("z.x[slice_dim]", z.x[slice_dim].shape)
     # exit()                          
     # gen_idx ={t0_gen:593,t0_dot:595,k:594}
-    #                             593    594    595
-#          c         G 6x600     t0_gen  k      t0_dot
-# t                              1       2      1
-# t_dot                          2       4      5
-# t0                             0.5     0      0
-# t_dot_0                        0       0      0.5
-# k                              0       0.1    0
-# t                              0  
+    #                                593    594    595
+    #          c         G 6x600     t0_gen  k      t0_dot
+    # t                              1       2      1
+    # t_dot                          2       4      5
+    # t0                             0.5     0      0
+    # t_dot_0                        0       0      0.5
+    # k                              0       0.1    0
+    # t                              0  
     newG = np.delete(z.G, generator_idx, 1)
-    slice_lambda = np.divide((slice_value - z.x[slice_dim]), slice_G)
+
+    slice_lambda = np.divide((slice_value - z.x[slice_dim].reshape(-1, )), slice_G)
     if len(slice_dim) == 1:
         sliceable_G = z.G[:, generator_idx].reshape((-1,1))
     else:
@@ -83,18 +81,26 @@ def convert_obs_to_zonotope(c,theta_len,theta_dot_length):
     newG = np.array([[theta_len/2, 0], [0, theta_dot_length/2]])
     return zonotope(newc, newG, color="red")
 
-def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list):
+
+def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list=None):
     '''
     Check complete_reachable_set(), get list of reachable sets for each t using k from the dict
     '''
 
-    print(zono_list, gen_idx_list,k, state_initial,Z_obs_list)
+    # Z_obs_list = []
+    # G_l = np.array([[0.1, 0], [0, 0.3]])*0.5
+    # x_l = np.array([3., 0.]).reshape(2, 1)
+    # # x_l = np.array([1., 4.]).reshape(2, 1)
+    # z_obs = zonotope(x_l, G_l)
+    # Z_obs_list.append(z_obs)
+    # print(zono_list, gen_idx_list, k, state_initial, Z_obs_list)
 
     # check last one first, largest, more likely to intersect with things
     for zono_idx in reversed(range(len(zono_list))):
-        # print(zono_list[zono_idx],gen_idx_list[zono_idx],np.append(state_initial,k))
-
-        zono = zonotope_slice(zono_list[zono_idx],gen_idx_list[zono_idx],slice_value=np.append(state_initial,k))
+        # print(zono_list[zono_idx], gen_idx_list[zono_idx], np.append(state_initial,k))
+        generator_idx = gen_idx_list[zono_idx]
+        generator_idx = generator_idx[2] - int(generator_idx[2]>generator_idx[0]) - int(generator_idx[2]>generator_idx[1])
+        zono = zonotope_slice(zono_list[zono_idx], generator_idx[-1], slice_dim=[4], slice_value=k)
         for Z_obs in Z_obs_list:
             if check_zono_contain(zono, Z_obs):
                 return True
@@ -109,7 +115,7 @@ def check_zono_contain(Z, Z_obs):
     # print((Z_obs.x.shape),(Z.x[0:2,0].shape))
     new_c = Z_obs.x - Z.x[0:2,0].reshape((2,1))
     shrinked_G = Z.G[0:2,:]
-    # print(shrinked_G)
+
     idx = np.argwhere(np.all(abs(shrinked_G[..., :]) < 1e-5, axis=0))
     shrinked_G = np.delete(shrinked_G, idx, axis=1) #delete all zeros generators
     new_G = np.concatenate((Z_obs.G,shrinked_G),axis=1) # there may be a lot of zeros since just using the first few dims of the G

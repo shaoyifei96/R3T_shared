@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from timeit import default_timer
 from polytope_symbolic_system.examples.pendulum import Pendulum
 from r3t.symbolic_system.symbolic_system_r3t_overapprox import SymbolicSystem_OverR3T
-from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope
+from pypolycontain.visualization.visualize_2D import visualize_2D_AH_polytope, visualize_obs
 from pypolycontain.lib.operations import distance_point_polytope, to_AH_polytope
 from pypolycontain.utils.random_polytope_generator import get_k_random_edge_points_in_zonotope_OverR3T
 from r3t.utils.visualization import visualize_node_tree_2D
@@ -14,6 +14,8 @@ import os
 import scipy.io
 from r3t.common.help import *
 
+# import warnings
+# warnings.filterwarnings("ignore")
 
 matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
@@ -173,6 +175,13 @@ def test_pendulum_planning():
 
     iter_count = 0
 
+    # Define obstacles
+    Z_obs_list = []
+    G_l = np.array([[0.1, 0], [0, 0.3]])*0.5
+    x_l = np.array([3., 0.]).reshape(2, 1)
+    z_obs = zonotope(x_l, G_l)
+    Z_obs_list.append(z_obs)
+
     while(1):
         print("iter_count: ", iter_count)
         iter_count += 1
@@ -182,10 +191,10 @@ def test_pendulum_planning():
             VISUALIZE = True
 
         start_time = time.time()
-        if rrt.build_tree_to_goal_state(goal_state,stop_on_first_reach=True, allocated_time= allocated_time, rewire=True, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
+        if rrt.build_tree_to_goal_state(goal_state, Z_obs_list=Z_obs_list, stop_on_first_reach=True, allocated_time= allocated_time, rewire=False, explore_deterministic_next_state=False, save_true_dynamics_path=True) is not None:
             found_goal = True
         end_time = time.time()
-        #get rrt polytopes
+        # get rrt polytopes
         polytope_reachable_sets = rrt.reachable_set_tree.id_to_reachable_sets.values()
         reachable_polytopes = []
         explored_states = []
@@ -220,6 +229,10 @@ def test_pendulum_planning():
             ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
             ax.scatter(goal_state[0], goal_state[1], facecolor='green', s=5)
             ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
+
+            # visualize obstacles
+            fig, ax = visualize_obs(Z_obs_list, color='red', fig=fig, ax=ax, N=50, epsilon=0.01, alpha=0.8) 
+
             # ax.grid(True, which='both')
             # y_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
             # ax.yaxis.set_major_formatter(y_formatter)
@@ -243,11 +256,7 @@ def test_pendulum_planning():
             # fig = plt.figure()
             # ax = fig.add_subplot(111)
 
-
-             
             # fig, ax = visualize_2D_AH_polytope_complete(rrt)
-
-
             fig, ax = visualize_2D_AH_polytope(reachable_polytopes, states=explored_states, fig=fig, ax=ax,N=50,epsilon=0.01, alpha=0.1)
 
             ax.scatter(initial_state[0], initial_state[1], facecolor='red', s=5)
@@ -272,11 +281,6 @@ def test_pendulum_planning():
             # allocated_time*=5
 
 if __name__=='__main__':
-
-    # # Global Variable
-    # mat = scipy.io.loadmat(
-    #     "/home/yingxue/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat"
-    # )
 
     for i in range(1):
         test_pendulum_planning()

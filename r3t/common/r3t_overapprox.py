@@ -306,7 +306,7 @@ class OverR3T:
         '''
         # print("child_state", child_state)
         # print("child_state int", round(child_state[0]), round(child_state[1]))
-        # round(-2.5) -> 2, TODO: As Yifei the data
+        # round(-2.5) -> 2, TODO: Ask Yifei the data
             
         complete_reachable_set = {}
         generator_list = {}
@@ -422,7 +422,7 @@ class OverR3T:
             return True, new_node
             
 
-    def build_tree_to_goal_state(self, goal_state, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e3),\
+    def build_tree_to_goal_state(self, goal_state, Z_obs_list=None, allocated_time = 20, stop_on_first_reach = False, rewire=False, explore_deterministic_next_state = True, max_nodes_to_add = int(1e3),\
                                  save_true_dynamics_path = False):
         '''
         Builds a RG-RRT* Tree to solve for the path to a goal.
@@ -482,20 +482,22 @@ class OverR3T:
                     nearest_state_id_list, k_closest = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
                     # print("k_closest", k_closest)
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
-                    # print("nearest_state_id_list", nearest_state_id_list)
-                    # print("nearest_node", nearest_node)
+
+                    # collision check
+                    collided = check_zonotope_collision(nearest_node.complete_reachable_set[round(k_closest)], nearest_node.generator_list[round(k_closest)], k_closest, nearest_node.state, Z_obs_list=Z_obs_list)
+                    if collided:
+                        continue
 
                     # # find the closest state in the reachable set and use it to extend the tree
                     # # new_state, discard, true_dynamics_path = nearest_node.reachable_set.find_closest_state(random_sample, save_true_dynamics_path=save_true_dynamics_path)
                     # print("running sampler 1")
                     new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
-                    discard = False     # TODO: Make it True and reconsider for collision checking
                     new_state_id = hash(str(new_state))
                     # print("running sampler 2")
                     # add the new node to the set tree if the new node is not already in the tree
                     # if new_state_id in self.state_to_node_map or discard:
 
-                    if new_state_id in self.state_to_node_map or discard:
+                    if new_state_id in self.state_to_node_map:
                         # FIXME: how to prevent repeated state exploration?
                         # print('Warning: state already explored')
                         # print("running sampler 3")
