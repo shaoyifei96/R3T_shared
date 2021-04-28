@@ -207,6 +207,8 @@ def visualize_2D_AH_polytope(list_of_AH_polytopes, states=None, a=1.5,color=None
     p_list=[]
     v_all=np.empty((0,2))
     new_list_of_AH_polytopes = []
+
+    p_a_list = [ [],[],[],[],[],[]  ]
     for i, Q_list in enumerate(list_of_AH_polytopes):
 
         # print("Q_list in Plotting", Q_list)
@@ -233,19 +235,41 @@ def visualize_2D_AH_polytope(list_of_AH_polytopes, states=None, a=1.5,color=None
                 v_all=np.vstack((v_all,v))
                 p=Polygon(v)
                 p_list.append(p)
+                p_a_list[Q.alpha].append(p)
                 # print("Q color",Q.color)
                 new_list_of_AH_polytopes.append(Q)
         # break;  # uncomment this to see just a single last time index reachable set corresponding to all parameter values k
 
-    if color is None:
-        p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=alpha)
-    else:
-        p_patch = PatchCollection(p_list, color=color,alpha=alpha)
-#    p_patch = PatchCollection(p_list, color=[(1-zono.x[0,0]>=1,0,zono.x[0,0]>=1) \
+    #    p_patch = PatchCollection(p_list, color=[(1-zono.x[0,0]>=1,0,zono.x[0,0]>=1) \
 #        for zono in list_of_zonotopes],alpha=0.75)
     if fig is None or ax is None:
         fig, ax = plt.subplots()
-    ax.add_collection(p_patch)
+
+    # divisions = 6
+    # for index in range(0,divisions):
+
+    # if color is None:
+    #     # p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=alpha)
+    #     p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=[Z.alpha for Z in new_list_of_AH_polytopes])
+    # else:
+    #     p_patch = PatchCollection(p_list, color=color,alpha=alpha)
+    # ax.add_collection(p_patch)
+
+    colors = ['blue','orange','green','red','purple','gray','olive']
+    colors = ['yellow','yellowgreen','greenyellow','lawngreen','olive','darkolivegreen']
+
+    divisions = 6
+    for index in range(0,divisions):
+        alpha = (index+1)*1.0/divisions/10
+        alpha = 0.1
+        color = colors[index]
+        p_patch = PatchCollection(p_a_list[index], color=color,alpha=alpha)
+        # p_patch = PatchCollection(p_a_list[index], color='yellowgreen',alpha=alpha)
+        if 1:#((index+1)%2 == 0):
+            ax.add_collection(p_patch)
+
+
+
 #    print(axis_limit)
     if len(axis_limit)==1:
         ax.set_xlim([np.min(v_all[:,0])-a,a+np.max(v_all[:,0])])
@@ -265,6 +289,8 @@ def visualize_2D_AH_polytope_debug(list_of_AH_polytopes,states=None, a=1.5,color
 
     print(list_of_AH_polytopes)
     # color = 'r'
+
+    p_a_list = [ [],[],[],[],[],[]  ]
     for i, Q_list in enumerate(list_of_AH_polytopes):
 
         # print(Q_list)
@@ -278,7 +304,7 @@ def visualize_2D_AH_polytope_debug(list_of_AH_polytopes,states=None, a=1.5,color
 
                 # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
                 # Q_polytope = convex_hull_of_point_and_polytope(states[i].reshape(Q_projected.x.shape), Q_projected)
-                
+                print("Z alpha",Q.alpha)
                 Q_polytope = to_AH_polytope(Q_projected)
                 v,w=AH_polytope_vertices(Q_polytope,N=N,epsilon=epsilon)
 
@@ -291,17 +317,28 @@ def visualize_2D_AH_polytope_debug(list_of_AH_polytopes,states=None, a=1.5,color
                 v_all=np.vstack((v_all,v))
                 p=Polygon(v)
                 p_list.append(p)
+                p_a_list[Q.alpha].append(p)
                 new_list_of_AH_polytopes.append(Q)
 
-    if color is None:
-        p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=alpha)
-    else:
-        p_patch = PatchCollection(p_list, color=color,alpha=alpha)
-#    p_patch = PatchCollection(p_list, color=[(1-zono.x[0,0]>=1,0,zono.x[0,0]>=1) \
-#        for zono in list_of_zonotopes],alpha=0.75)
+    # if color is None:
+    #     # p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=alpha)
+    #     p_patch = PatchCollection(p_list, color=[Z.color for Z in new_list_of_AH_polytopes],alpha=[Z.alpha for Z in new_list_of_AH_polytopes])
+    # else:
+    #     p_patch = PatchCollection(p_list, color=color,alpha=alpha)
+
     if fig is None or ax is None:
         fig, ax = plt.subplots()
-    ax.add_collection(p_patch)
+
+    divisions = 6
+    for index in range(0,divisions):
+        alpha = (index+1)*1.0/divisions
+        p_patch = PatchCollection(p_a_list[index], color='blue',alpha=alpha)
+        ax.add_collection(p_patch)
+
+#    p_patch = PatchCollection(p_list, color=[(1-zono.x[0,0]>=1,0,zono.x[0,0]>=1) \
+#        for zono in list_of_zonotopes],alpha=0.75)
+   
+    # ax.add_collection(p_patch)
 #    print(axis_limit)
     if len(axis_limit)==1:
         ax.set_xlim([np.min(v_all[:,0])-a,a+np.max(v_all[:,0])])

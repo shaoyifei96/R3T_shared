@@ -105,7 +105,7 @@ def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_li
 
     # check last one first, largest, more likely to intersect with things
     # for zono_idx in reversed(range(len(zono_list))):
-    print("max_time_index",max_time_index)
+    # print("max_time_index",max_time_index)
     for zono_idx in reversed(range(max_time_index+1)):
         # print(zono_list[zono_idx], gen_idx_list[zono_idx], np.append(state_initial,k))
         generator_idx = gen_idx_list[zono_idx]

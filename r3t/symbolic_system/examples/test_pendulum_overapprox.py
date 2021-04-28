@@ -61,7 +61,7 @@ def test_pendulum_planning():
         rnd[1] = r*np.sin(theta)
         return rnd
 
-    def contains_goal_function(reachable_set, goal_state, key_vertex_count=3):
+    def contains_goal_function(reachable_set, goal_state, key_vertex_count=10):
 
         distance = np.inf
         # distance1 = np.inf

@@ -187,6 +187,8 @@ class OverR3TNode():
         k_list = []
 
         colors = ['blue','orange','green','red','purple','gray','olive']
+        colors = ['yellow','yellowgreen','greenyellow','lawngreen','olive','darkolivegreen']
+
 
         for k, v in self.complete_reachable_set.items():
 
@@ -216,6 +218,7 @@ class OverR3TNode():
                 list_index = int((index+1)*1.0/divisions*len(v)) - 1
 
                 v[list_index].color = colors[index]
+                v[list_index].alpha = index#(index+1)*1.0/divisions
                 # print(f"List index:{list_index}, Time index:{v[list_index].time_index}")
                 reachable_set_zonotope.append(v[list_index]) # for each parameter, take only the last zonotope
                 last_generator_idx.append(self.generator_list[k][list_index])
@@ -279,7 +282,8 @@ class OverR3T:
         '''
         # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/data/frs/FRS_pendulum_theta_0_theta_dot_0_k_0.mat")
         # self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/frs_files/')
-        self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/r3t/data/frs/')
+        # self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/r3t/data/frs/')
+        self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/r3t/data/frs_new_28_4/')
         complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
         self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
@@ -574,7 +578,7 @@ class OverR3T:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
             # print("running search 2")
-            print(f"sample_count:{sample_count}, collision_check_duration_to_valid_sample:{duration_to_valid_sample}")
+            # print(f"sample_count:{sample_count}, collision_check_duration_to_valid_sample:{duration_to_valid_sample}")
             if sample_count>100:
                 print('Warning: sample count %d' %sample_count)  # just warning that cannot get to a new sample even after so long
             if not explore_deterministic_next_state:

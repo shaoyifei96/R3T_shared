@@ -30,6 +30,7 @@ class zonotope():
             self.color=color
         except:
             self.color=(np.random.random(),np.random.random(),np.random.random())
+        self.alpha = 0.5
         self.type="zonotope"
         self.hash_value=None
         self.__name__ = "zonotope"

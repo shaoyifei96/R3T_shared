@@ -165,7 +165,7 @@ class PolytopeReachableSetTree(ReachableSetTree):
     '''
     Polytopic reachable set with PolytopeTree
     '''
-    def __init__(self, key_vertex_count = 3, distance_scaling_array=None):
+    def __init__(self, key_vertex_count = 10, distance_scaling_array=None):
         ReachableSetTree.__init__(self)
         self.polytope_tree = None
         self.id_to_reachable_sets = {}
