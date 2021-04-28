@@ -17,7 +17,8 @@ class zonotope():
     """
     Definition of a Zonotope
     """
-    def __init__(self,x,G,name=None,color=None):
+    # Hardik: THIS one used
+    def __init__(self,x,G,name=None,color=None,time_index = 30):
         self.x=x
         self.G=G
         if name==None:
@@ -32,6 +33,7 @@ class zonotope():
         self.type="zonotope"
         self.hash_value=None
         self.__name__ = "zonotope"
+        self.time_index = time_index
 
     def __repr__(self):
         return self.name

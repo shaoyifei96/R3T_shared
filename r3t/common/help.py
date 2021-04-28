@@ -1,7 +1,7 @@
 import numpy as np
 from pypolycontain.lib.zonotope import zonotope, zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
-from pypolycontain.lib.zonotope import zonotope_inside
+from pypolycontain.lib.zonotope import zonotope_inside, zonotope_distance_point
 
 # AABB collision check
 from closest_polytope_algorithms.bounding_box.box import point_in_box
@@ -11,6 +11,8 @@ from closest_polytope_algorithms.bounding_box.box import AH_polytope_to_box
 from matplotlib.pyplot import show
 
 import scipy.io
+
+import time
 
 # --------------------- Global Variables ---------------------
 # Simon: Why is this here? makes my code break... why need global
@@ -88,7 +90,7 @@ def convert_obs_to_zonotope(c,theta_len,theta_dot_length):
     return zonotope(newc, newG, color="red")
 
 
-def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list=None):
+def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_list=None, max_time_index = 1):
     '''
     Check complete_reachable_set(), get list of reachable sets for each t using k from the dict
     '''
@@ -102,7 +104,9 @@ def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_li
     # print(zono_list, gen_idx_list, k, state_initial, Z_obs_list)
 
     # check last one first, largest, more likely to intersect with things
-    for zono_idx in reversed(range(len(zono_list))):
+    # for zono_idx in reversed(range(len(zono_list))):
+    print("max_time_index",max_time_index)
+    for zono_idx in reversed(range(max_time_index+1)):
         # print(zono_list[zono_idx], gen_idx_list[zono_idx], np.append(state_initial,k))
         generator_idx = gen_idx_list[zono_idx]
         generator_idx = generator_idx[2] - int(generator_idx[2]>generator_idx[0]) - int(generator_idx[2]>generator_idx[1])
@@ -135,6 +139,14 @@ def check_zono_contain(Z, Z_obs):
     new_G = np.concatenate((Z_obs.G,shrinked_G),axis=1) # there may be a lot of zeros since just using the first few dims of the G
     buffered_Z = zonotope(new_c, new_G, color = "red")
     # print("newc newG",new_c,new_G)
+
+    # distance  = zonotope_distance_point(buffered_Z,np.zeros((2,1)) )[0]
+    # # print("distance to zonotope (Collision)",distance)
+    # if (distance<0.2):
+    #     return True
+    # else:
+    #     return False
+
     return zonotope_inside(buffered_Z, np.zeros((2,1)))
 
 

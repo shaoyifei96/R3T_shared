@@ -233,6 +233,7 @@ def visualize_2D_AH_polytope(list_of_AH_polytopes, states=None, a=1.5,color=None
                 v_all=np.vstack((v_all,v))
                 p=Polygon(v)
                 p_list.append(p)
+                # print("Q color",Q.color)
                 new_list_of_AH_polytopes.append(Q)
         # break;  # uncomment this to see just a single last time index reachable set corresponding to all parameter values k
 
@@ -263,10 +264,10 @@ def visualize_2D_AH_polytope_debug(list_of_AH_polytopes,states=None, a=1.5,color
     new_list_of_AH_polytopes = []
 
     print(list_of_AH_polytopes)
-    color = 'r'
+    # color = 'r'
     for i, Q_list in enumerate(list_of_AH_polytopes):
 
-        print(Q_list)
+        # print(Q_list)
 
         plot_idx = [int(len(Q_list) // 2)-1, int(len(Q_list) // 2), int(len(Q_list) // 2)+1]
 

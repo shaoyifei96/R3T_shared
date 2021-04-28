@@ -216,6 +216,8 @@ class PolytopeTree:
             keypoints = np.array([np.fromstring(k) for k, v in self.key_point_to_zonotope_map.items() if v[0] == [list(best_polytope)[0]]])
             delta = keypoints - original_query_point
 
+            # print("best polytope",list(best_polytope)[0].time_index)
+
             # if ball=="infinity":
             #     d=np.linalg.norm(delta,ord=np.inf, axis=1)
             # elif ball=="l1":

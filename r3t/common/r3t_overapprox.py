@@ -186,10 +186,41 @@ class OverR3TNode():
         last_generator_idx = []
         k_list = []
 
+        colors = ['blue','orange','green','red','purple','gray','olive']
+
         for k, v in self.complete_reachable_set.items():
-            reachable_set_zonotope.append(v[-1])
-            last_generator_idx.append(self.generator_list[k][-1])
-            k_list.append(k)
+
+            
+            # # Last time index
+            # v[-1].color = "purple"
+            # reachable_set_zonotope.append(v[-1]) # for each parameter, take only the last zonotope
+            # last_generator_idx.append(self.generator_list[k][-1])
+            # k_list.append(k)
+
+            # # Middle time index
+            # middle_index = int(2*len(v)/3.0)
+            # v[middle_index].color = "red"
+            # reachable_set_zonotope.append(v[middle_index]) # for each parameter, take only the last zonotope
+            # last_generator_idx.append(self.generator_list[k][middle_index])
+            # k_list.append(k)
+
+            # #First time index
+            # first_index = int(len(v)/3)
+            # v[0].color = "green"
+            # reachable_set_zonotope.append(v[first_index]) # for each parameter, take only the last zonotope
+            # last_generator_idx.append(self.generator_list[k][first_index])
+            # k_list.append(k)
+
+            divisions = 6
+            for index in range(0,divisions):
+                list_index = int((index+1)*1.0/divisions*len(v)) - 1
+
+                v[list_index].color = colors[index]
+                # print(f"List index:{list_index}, Time index:{v[list_index].time_index}")
+                reachable_set_zonotope.append(v[list_index]) # for each parameter, take only the last zonotope
+                last_generator_idx.append(self.generator_list[k][list_index])
+                k_list.append(k)
+
 
         # print("reachable_set_zonotope", len(reachable_set_zonotope), reachable_set_zonotope[0])
         # print("last_generator_idx", len(last_generator_idx), last_generator_idx[0].shape) # (3, 1)
@@ -248,7 +279,7 @@ class OverR3T:
         '''
         # self.mat = scipy.io.loadmat("/home/yingxue/R3T_shared/r3t/data/frs/FRS_pendulum_theta_0_theta_dot_0_k_0.mat")
         # self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/frs_files/')
-        self.frs_dict = self.load_frs_dict(basepath='/home/yingxue/R3T_shared/r3t/data/frs/')
+        self.frs_dict = self.load_frs_dict(basepath='/media/hardik/Windows/Ubuntu/R3T_shared/r3t/data/frs/')
         complete_reachable_set, generator_list = self.compuate_reachable_set_and_generator(root_state)
         self.root_node = OverR3TNode(root_state, compute_last_reachable_set, complete_reachable_set, generator_list, np.asarray([root_state, root_state]),cost_from_parent=0)
         self.root_id = hash(str(root_state))
@@ -320,7 +351,7 @@ class OverR3T:
 
                 generator_list[k[2]] = []
                 complete_reachable_set[k[2]] = []
-
+                time_index = 0
                 # slice all time step by initial state
                 for t in range(len(mat['info_FRS'][0])): 
 
@@ -328,10 +359,15 @@ class OverR3T:
 
                     x = mat['save_FRS'][0][t][:,0]  # center
                     G = mat['save_FRS'][0][t][:,1:]
+                    # print("time_index init",time_index)
                     Z = zonotope(x,G,color='green')
+                    # print("time index verify",Z.time_index)
 
                     Z_slice = zonotope_slice(Z, generator_idx=mat['info_FRS'][0][t][:2], slice_value=slice_value, slice_dim=[2, 3])
+                    Z_slice.time_index = time_index
                     complete_reachable_set[k[2]].append(Z_slice)
+
+                    time_index += 1
 
         return complete_reachable_set, generator_list
 
@@ -470,26 +506,38 @@ class OverR3T:
             #sample the state space
             sample_is_valid = False
             sample_count = 0
+            duration_to_valid_sample = 0
             while not sample_is_valid:
 
                 random_sample = self.sampler()
                 sample_count+=1
                 # map the states to nodes
-                try:
+                if (1): #try:
                     # print("TRY")
-                    nearest_state_id_list, k_closest = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
+                    nearest_state_id_list, k_closest, closest_time_index = list(self.reachable_set_tree.nearest_k_neighbor_ids(random_sample, k=1, return_state_projection=False))  # FIXME: necessary to cast to list? Answer: No.
                     # print("k_closest", k_closest)
                     nearest_node = self.state_to_node_map[nearest_state_id_list[0]]
 
+                    # print("closest_time_index",closest_time_index)
+
                     # find the closest state in the reachable set and use it to extend the tree
+
+                    start_t = time.time()
                     # ------------- option 1 --------------
-                    collided = check_zonotope_collision(nearest_node.complete_reachable_set[round(k_closest)], nearest_node.generator_list[round(k_closest)], k_closest, nearest_node.state, Z_obs_list=Z_obs_list)
-                    new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest)
+                    collided = False
+                    collided = check_zonotope_collision(nearest_node.complete_reachable_set[round(k_closest)], nearest_node.generator_list[round(k_closest)], k_closest, nearest_node.state, Z_obs_list=Z_obs_list, max_time_index=closest_time_index)
+                    new_state, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T(random_sample, k_closest, max_time_index=closest_time_index)
                     # ----------- option 1 (END) ----------
 
                     # ------------- option 2 --------------
-                    new_state, collided, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T_AABB(random_sample, k_closest, Z_obs_list=Z_obs_list)
+                    # new_state, collided, true_dynamics_path = nearest_node.reachable_set.find_closest_state_OverR3T_AABB(random_sample, k_closest, Z_obs_list=Z_obs_list)
                     # ----------- option 2 (END) ----------
+
+                    end_t = time.time()
+
+                    duration_t = end_t-start_t
+                    duration_to_valid_sample += duration_t
+                    # print("Collision + build path time",duration_t)
 
                     if collided:
                         continue
@@ -511,7 +559,8 @@ class OverR3T:
                     else:
                         # print("running sampler 5")
                         is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
-                except Exception as e:
+                else:
+                # except Exception as e:
                     print('Caught (build_tree_to_goal_state) %s' % e)
                     # print("running sampler 6")
                     is_extended = False
@@ -525,6 +574,7 @@ class OverR3T:
                     sample_is_valid = True
                 #FIXME: potential infinite loop
             # print("running search 2")
+            print(f"sample_count:{sample_count}, collision_check_duration_to_valid_sample:{duration_to_valid_sample}")
             if sample_count>100:
                 print('Warning: sample count %d' %sample_count)  # just warning that cannot get to a new sample even after so long
             if not explore_deterministic_next_state:

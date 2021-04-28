@@ -108,13 +108,19 @@ class PolytopeReachableSet(ReachableSet):
         return np.ndarray.flatten(state), False, state_list
 
 
-    def find_closest_state_OverR3T(self, query_point, k_closest, K=0.5):
+    def find_closest_state_OverR3T(self, query_point, k_closest, K=0.5, max_time_index = 1):
         # TODO: Add Cost Later
         # u = np.ndarray.flatten(u)[0:self.sys.u.shape[0]]
         # #simulate nonlinear forward dynamics
         state = self.parent_state
         state_list = [self.parent_state]
-        for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
+
+        reachable_set_step_size = self.reachable_set_step_size*(1+max_time_index)/30
+        # print("reachable_set_step_size",reachable_set_step_size)
+
+
+        # for step in range(int(self.reachable_set_step_size/self.nonlinear_dynamic_step_size)):
+        for step in range(int(reachable_set_step_size/self.nonlinear_dynamic_step_size)):
             # u = K * (k_closest - state[0]) # theta
             # u = K * (k_closest - state[1]) # theta_dot
             u = 2 * k_closest
@@ -226,7 +232,8 @@ class PolytopeReachableSetTree(ReachableSetTree):
             return None
         # assert(len(self.polytope_tree.find_closest_polytopes(query_state))==1)
         best_polytope, k_closest, best_distance, state_projection = self.polytope_tree.find_closest_polytopes(query_state, return_state_projection=True, may_return_multiple=True, ball='l2')
-        
+        # print("best_polytope time index",best_polytope[0].time_index)
+        best_polytope_time_index = best_polytope[0].time_index
         # print("len(best_polytope)", len(best_polytope)) # always 1
 
         best_polytopes_list = [self.polytope_to_id[bp] for bp in best_polytope]
@@ -234,8 +241,8 @@ class PolytopeReachableSetTree(ReachableSetTree):
         # print("best_polytopes_list", len(best_polytopes_list))
 
         if not return_state_projection:
-            return best_polytopes_list[:k], k_closest
-        return best_polytopes_list[:k], k_closest, best_polytope, [best_distance], [state_projection]
+            return best_polytopes_list[:k], k_closest, best_polytope_time_index
+        return best_polytopes_list[:k], k_closest, best_polytope, [best_distance], [state_projection],
 
     def d_neighbor_ids(self, query_state, d = np.inf):
         '''

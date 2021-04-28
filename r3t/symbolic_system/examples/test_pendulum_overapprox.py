@@ -36,7 +36,8 @@ def test_pendulum_planning():
     nonlinear_dynamic_step_size=1e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
-        rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
+        # rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
+        rnd[0] = (rnd[0]-0.5)*2.1*np.pi
         rnd[1] = (rnd[1]-0.5)*2*12
         goal_bias_rnd = np.random.rand(1)
         # if goal_bias_rnd <0.2:

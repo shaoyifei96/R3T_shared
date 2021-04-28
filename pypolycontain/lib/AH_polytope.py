@@ -40,6 +40,7 @@ class AH_polytope():
         self.hash_value = 0
         self.distance_program = None
         self.color = 'r'
+        self.__name__ = "AH_polytope"
     def __repr__(self):
         return "AH_polytope from R^%d to R^%d"%(self.P.n,self.n)
 
