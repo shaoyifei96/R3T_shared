@@ -2,8 +2,9 @@ import numpy as np
 from pypolycontain.lib.zonotope import zonotope,zonotope_directed_distance
 from pypolycontain.visualization.visualize_2D import visualize_2D_zonotopes as visZ
 from matplotlib.pyplot import show
-from r3t.common.help import check_zonotope_collision, convert_obs_to_zonotope,zonotope_slice
+from r3t.common.help import check_zonotope_collision, convert_obs_to_zonotope, zonotope_slice
 from sys import getsizeof
+import time
 
 import scipy.io# for matab import, zonotope array saved as cell arrary of matrix, dim x num_generator +1, MATLAB: c = Z(:,1) G = Z(:,2:end)
 import os
@@ -41,31 +42,34 @@ import os
 #     newc =  np.matmul(z.G[:, generator_idx].squeeze(),slice_lambda) + z.x
 
 #     return zonotope(newc,newG,color="red")
-# entries = os.listdir('/home/simon/Documents/MP_backup/motion_planning_598/frs_files/')
-# basepath = '/home/simon/Documents/MP_backup/motion_planning_598/frs_files/'
-basepath = '/home/yingxue/R3T_shared/r3t/data/frs'
 
-frs_dict = {}#FRS_pendulum_theta_0_theta_dot_0_k_2
-for entry in os.listdir(basepath):
-    if os.path.isfile(os.path.join(basepath, entry)):
-        mat = scipy.io.loadmat(os.path.join(basepath, entry))
-        list_of_words = entry.split('_')
-        # print("theta=",int(list_of_words[3]))
-        # print("theta_dot=",int(list_of_words[6]))
-        # print("theta_k=",int(list_of_words[8].split('.')[0]))
-        frs_dict[(int(list_of_words[3]),int(list_of_words[6]),int(list_of_words[8].split('.')[0]))] = mat
-        # start = entry.index("_theta_")
-        # end   = entry.index("_theta_dot_")
-        #    = entry.index("_theta_dot_")
 
-        # print("theta=",int(entry[start+7:end]),entry[start+7:end])
-        # print("theta=",int(entry[start+7:end]),)
-        # print("theta=",entry[start+7:end])
-# 3D mesh with one parameter range and two initial condition range
-print(getsizeof(frs_dict))
-exit()
+# # entries = os.listdir('/home/simon/Documents/MP_backup/motion_planning_598/frs_files/')
+# # basepath = '/home/simon/Documents/MP_backup/motion_planning_598/frs_files/'
+# basepath = '/home/yingxue/R3T_shared/r3t/data/frs_new_28_4'
 
-mat = scipy.io.loadmat('/home/simon/Documents/MP_backup/motion_planning_598/final/R3T_shared/r3t/overapproximate_with_slice/test_zono.mat')
+# frs_dict = {}#FRS_pendulum_theta_0_theta_dot_0_k_2
+# for entry in os.listdir(basepath):
+#     if os.path.isfile(os.path.join(basepath, entry)):
+#         mat = scipy.io.loadmat(os.path.join(basepath, entry))
+#         list_of_words = entry.split('_')
+#         # print("theta=",int(list_of_words[3]))
+#         # print("theta_dot=",int(list_of_words[6]))
+#         # print("theta_k=",int(list_of_words[8].split('.')[0]))
+#         frs_dict[(int(list_of_words[3]),int(list_of_words[6]),int(list_of_words[8].split('.')[0]))] = mat
+#         # start = entry.index("_theta_")
+#         # end   = entry.index("_theta_dot_")
+#         #    = entry.index("_theta_dot_")
+
+#         # print("theta=",int(entry[start+7:end]),entry[start+7:end])
+#         # print("theta=",int(entry[start+7:end]),)
+#         # print("theta=",entry[start+7:end])
+# # 3D mesh with one parameter range and two initial condition range
+# print(getsizeof(frs_dict))
+# exit()
+
+mat = scipy.io.loadmat('/home/yingxue/R3T_shared/r3t/data/frs_new_28_4/FRS_pendulum_theta_0_theta_dot_0_k_0.mat')
+
             #var     #=0 #time 
 print("printing loaded data stats")
 print(f"mat info \n :{mat['info_FRS']}")
@@ -87,7 +91,23 @@ zonotope_slice(z1,mat['info_FRS'][0] [10], slice_value = slice_value)
 Z_obs = convert_obs_to_zonotope(np.array([1,2]),2.5,0.5)
 print("obs center and geneartor",Z_obs.x, Z_obs.G)
 
-print(check_zonotope_collision([z1], [mat['info_FRS'][0][10]],  0.1827, [0.1324, -0.4025], [Z_obs]))
+
+total_time = 0.
+
+T = 10000
+start_time = time.time()
+while T > 0:
+    T -= 1
+    check_zonotope_collision([z1], [mat['info_FRS'][0][10]],  0.1827, [0.1324, -0.4025], [Z_obs], max_time_index=0)
+end_time = time.time()
+
+total_time += (end_time-start_time)
+
+print("total_time", total_time)
+# total_time 1.2398881912231445 -> new
+# total_time 7.040544509887695 -> new
+
+
 #info contain info about which generator to slice during online for each zonotope, in order [theta; thetadot; k]
 
 #don't think about try to viz, you are gonna run out of memory. 

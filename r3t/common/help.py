@@ -95,14 +95,6 @@ def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_li
     Check complete_reachable_set(), get list of reachable sets for each t using k from the dict
     '''
 
-    # Z_obs_list = []
-    # G_l = np.array([[0.1, 0], [0, 0.3]])*0.5
-    # x_l = np.array([3., 0.]).reshape(2, 1)
-    # # x_l = np.array([1., 4.]).reshape(2, 1)
-    # z_obs = zonotope(x_l, G_l)
-    # Z_obs_list.append(z_obs)
-    # print(zono_list, gen_idx_list, k, state_initial, Z_obs_list)
-
     # check last one first, largest, more likely to intersect with things
     # for zono_idx in reversed(range(len(zono_list))):
     # print("max_time_index",max_time_index)
@@ -112,18 +104,34 @@ def check_zonotope_collision(zono_list, gen_idx_list, k, state_initial, Z_obs_li
         generator_idx = generator_idx[2] - int(generator_idx[2]>generator_idx[0]) - int(generator_idx[2]>generator_idx[1])
         zono = zonotope_slice(zono_list[zono_idx], generator_idx[-1], slice_dim=[4], slice_value=k)
         for Z_obs in Z_obs_list:
-            if check_zono_contain(zono, Z_obs):
+            # if check_zono_contain(zono, Z_obs):
+                # return True
+            if check_zono_contain_HP(zono, Z_obs):
                 return True
             
-            # Box-to-box collision
-            # Current code is incorrect, it only check the center of zonotope with obs boxes
-            # obs_p = to_AH_polytope(Z_obs)
-            # obs_box = AH_polytope_to_box(obs_p, return_AABB = True)
-            # if point_in_box(zono.x, obs_box):
-            #     # collided, Just discard, same as plan_collision_free_path_in_set()
-            #     return True
-
     return False
+
+def check_zono_contain_HP(Z, Z_obs):
+    new_c = Z_obs.x - Z.x[0:2,0].reshape((2,1))
+    shrinked_G = Z.G[0:2,:]
+    idx = np.argwhere(np.all(abs(shrinked_G[..., :]) < 1e-5, axis=0))
+    shrinked_G = np.delete(shrinked_G, idx, axis=1) #delete all zeros generators
+    new_G = np.concatenate((Z_obs.G,shrinked_G),axis=1) # there may be a lot of zeros since just using the first few dims of the G
+
+    C = new_G # 2x10
+    #... get perpendicular vector
+    C = np.vstack((-C[1, :], C[0, :]))
+    # normalize normal vectors
+    C = (C/np.sqrt(np.sum(C**2, axis=0, keepdims=True))).transpose()
+    # build d vector
+    deltaD = np.sum(np.abs((C @ new_G).transpose()), axis=0, keepdims=True).transpose()
+    # compute dPos, dNeg
+    d = C @ new_c
+    # PA = np.vstack((C, -C))
+    Pb = np.vstack((d+deltaD,-d+deltaD))
+
+    return np.max(-Pb) <= 0 # unsafe
+
 
 
 def check_zono_contain(Z, Z_obs):
