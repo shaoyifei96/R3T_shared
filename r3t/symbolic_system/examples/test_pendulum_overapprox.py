@@ -167,7 +167,26 @@ def test_pendulum_planning():
     G_l = np.array([[0.1, 0], [0, 0.3]])*1.5
     x_l = np.array([1., 4.5]).reshape(2, 1)
     z_obs = zonotope(x_l, G_l)
+
     Z_obs_list.append(z_obs)
+
+    # G_l = np.array([[0.1, 0], [0, 0.3]])*1.5
+    # x_l = np.array([-1., 4.5]).reshape(2, 1)
+    # z_obs = zonotope(x_l, G_l)    
+
+    # Z_obs_list.append(z_obs)
+
+    # G_l = np.array([[0.1, 0], [0, 0.3]])*1.5
+    # x_l = np.array([-1, -4.5]).reshape(2, 1)
+    # z_obs = zonotope(x_l, G_l)    
+    
+    # Z_obs_list.append(z_obs)
+
+    # G_l = np.array([[0.1, 0], [0, 0.3]])*1.5
+    # x_l = np.array([1, -4.5]).reshape(2, 1)
+    # z_obs = zonotope(x_l, G_l)    
+    
+    # Z_obs_list.append(z_obs)
 
     while(1):
         print("iter_count: ", iter_count)

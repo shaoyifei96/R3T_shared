@@ -350,7 +350,8 @@ def visualize_2D_AH_polytope_debug(list_of_AH_polytopes,states=None, a=1.5,color
     ax.set_title(title)
 
     ax.scatter(states[0][0], states[0][1], c='black', s=20)
-    ax.scatter(states[1][0], states[1][1], c='green', s=20)    
+    ax.scatter(states[1][0], states[1][1], c='lawngreen', s=20)  
+    ax.scatter(states[2][0], states[2][1], c='red', s=20)  
 
 
     plt.show()

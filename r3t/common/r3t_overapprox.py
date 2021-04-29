@@ -428,7 +428,7 @@ class OverR3T:
     #         return True, new_node
 
 
-    def extend(self, new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True):
+    def extend(self, new_state, nearest_node, true_dynamics_path, sample_point, explore_deterministic_next_state=True):
         """
 
         :param new_state:
@@ -450,6 +450,8 @@ class OverR3T:
         # states = []
         # states.append(nearest_node.state)
         # states.append(new_state)
+        # states.append(sample_point)
+        # print("sample_point",sample_point)
         # reachable_sets = []
         # # reachable_sets.append(new_node.reachable_set.polytope_list)
         # reachable_sets.append(nearest_node.reachable_set.polytope_list)
@@ -559,10 +561,10 @@ class OverR3T:
 
                     if not explore_deterministic_next_state:
                         # print("running sampler 4") # - we are running this
-                        is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False)
+                        is_extended, new_node = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=False, sample_point=random_sample)
                     else:
                         # print("running sampler 5")
-                        is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True)
+                        is_extended, new_node, deterministic_next_state = self.extend(new_state, nearest_node, true_dynamics_path, explore_deterministic_next_state=True, sample_point=random_sample)
                 else:
                 # except Exception as e:
                     print('Caught (build_tree_to_goal_state) %s' % e)
