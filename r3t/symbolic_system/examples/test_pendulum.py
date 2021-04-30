@@ -15,7 +15,7 @@ matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
 
 reachable_set_epsilon = 2
-goal_tolerance = 0.5 # 5e-2
+goal_tolerance = 0.1 # 5e-2
 input_limit = 1
 input_samples = 9
 
