@@ -15,7 +15,7 @@ matplotlib.rcParams['font.family'] = "Times New Roman"
 matplotlib.rcParams.update({'font.size': 14})
 
 reachable_set_epsilon = 2
-goal_tolerance = 0.1 # 5e-2
+goal_tolerance = 0.3 # 5e-2
 input_limit = 1
 input_samples = 9
 
@@ -25,7 +25,7 @@ def test_pendulum_planning():
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-input_limit],[input_limit]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.3 # 0.1 # 0.075
+    step_size = 0.1 # 0.1 # 0.075
     nonlinear_dynamic_step_size=1e-2
     def uniform_sampler():
         rnd = np.random.rand(2)
@@ -118,7 +118,9 @@ def test_pendulum_planning():
         # print(len(explored_states))
         # print('number of nodes',rrt.node_tally)
         goal_override = None
+        VISUALIZE = False
         if found_goal:
+            VISUALIZE  = True
             p = rrt.goal_node.parent.state
             if np.linalg.norm(p-np.asarray([np.pi,0.0])) < np.linalg.norm(p-np.asarray([-np.pi,0.0])):
                 goal_override = np.asarray([np.pi,0.0])
@@ -126,9 +128,9 @@ def test_pendulum_planning():
                 goal_override = np.asarray([-np.pi, 0.0])
 
         print("Number of Nodes in the tree: ", rrt.node_tally)
-
+        duration += (end_time-start_time)
         if VISUALIZE:
-
+            print("duration",duration)
             # Plot state tree
             fig = plt.figure()
             ax = fig.add_subplot(111)
@@ -152,7 +154,7 @@ def test_pendulum_planning():
             # ax.set_xlabel('$\\theta (rad)$')
             # ax.set_ylabel('$\dot{\\theta} (rad/s)$')
             #
-            duration += (end_time-start_time)
+            # duration += (end_time-start_time)
             # plt.title('R3T after %.2f seconds (explored %d nodes)' %(duration, len(polytope_reachable_sets)))
             # plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_tree.png' % duration, dpi=500)
             # # plt.show()
@@ -173,12 +175,13 @@ def test_pendulum_planning():
             ax.scatter(goal_state[0]-2*np.pi, goal_state[1], facecolor='green', s=5)
 
             # ax.set_aspect('equal')
-            plt.xlabel('$x$')
-            plt.ylabel('$\dot{x}$')
+            plt.xlabel(r"$ \theta (rad)$")
+            plt.ylabel(r"$\dot{\theta} (rad/s)$")
             plt.xlim([-5, 5])
             plt.ylim([-12,12])
             plt.tight_layout()
-            plt.title('$|u| \leq %.2f$ Reachable Set after %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
+            
+            plt.title('$|u|\leq %.2f$ Reachable Set in %.2fs (%d nodes)' %(input_limit, duration, len(polytope_reachable_sets)))
             plt.savefig('R3T_Pendulum_'+experiment_name+'/%.2f_seconds_reachable_sets.png' % duration, dpi=500)
             # plt.pause(0.02)
             # plt.show()

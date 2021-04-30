@@ -21,7 +21,7 @@ def test_pendulum_planning():
     pendulum_system = Pendulum(initial_state= initial_state, input_limits=np.asarray([[-1],[1]]), m=1, l=0.5, g=9.8, b=0.1)
     goal_state = np.asarray([np.pi,0.0])
     goal_state_2 = np.asarray([-np.pi,0.0])
-    step_size = 0.1#0.08
+    step_size = 0.1#0.1#0.08
     def uniform_sampler():
         rnd = np.random.rand(2)
         rnd[0] = (rnd[0]-0.5)*2*1.5*np.pi
@@ -65,7 +65,7 @@ def test_pendulum_planning():
         d2 = np.linalg.norm(state-goal_state_2)
         best_distance = min(best_distance, min(d1, d2))
         # if d1<5e-2 or d2<5e-2:
-        if d1<0.5 or d2<0.5:
+        if d1<0.05 or d2<0.05:
             print('Goal error %f' %min(np.linalg.norm(state-goal_state), np.linalg.norm(state-goal_state_2)))
             return True
         return False
