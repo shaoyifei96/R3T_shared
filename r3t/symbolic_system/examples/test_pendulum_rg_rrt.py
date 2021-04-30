@@ -64,7 +64,8 @@ def test_pendulum_planning():
         d1 = np.linalg.norm(state-goal_state)
         d2 = np.linalg.norm(state-goal_state_2)
         best_distance = min(best_distance, min(d1, d2))
-        if d1<5e-2 or d2<5e-2:
+        # if d1<5e-2 or d2<5e-2:
+        if d1<0.5 or d2<0.5:
             print('Goal error %f' %min(np.linalg.norm(state-goal_state), np.linalg.norm(state-goal_state_2)))
             return True
         return False
